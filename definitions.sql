@@ -22,6 +22,7 @@ CREATE TABLE Giardino.Genere (
         NOT NULL
         ON DELETE RESTRICT
         ON UPDATE CASCADE
+    max_id integer NOT NULL
 );
 
 CREATE TABLE Giardino.SensibileAlClima (
@@ -34,7 +35,7 @@ CREATE TABLE Giardino.Clima (
     nome varchar(50) PRIMARY KEY
 );
 
-CREATE TABLE Giardino.PuòStare (
+CREATE TABLE Giardino.PuoStare (
     clima varchar(50) REFERENCES Giardino.Clima
         ON DELETE CASCADE
         ON UPDATE CASCADE,
@@ -72,7 +73,7 @@ CREATE TABLE Giardino.Giardiniere (
     cognome varchar(50) NOT NULL
 );
 
-CREATE TABLE Giardino.ÈResponsabile (
+CREATE TABLE Giardino.EResponsabile (
     numero_pianta integer,
     genere_pianta varchar(50),
     giardiniere char(16) REFERENCES Giardino.Giardiniere(cf)
@@ -102,6 +103,16 @@ CREATE TABLE Giardino.Lavora (
     FOREIGN KEY (giorno_della_settimana, ora_inizio, ora_fine) REFERENCES Giardino.Orario
         ON DELETE CASCADE
         ON UPDATE CASCADE
+);
+
+CREATE TABLE Giardino.GP (
+    genere varchar(50) REFERENCES Giardino.Genere
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    posizione char(5) REFERENCES Giardino.Posizione
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    PRIMARY KEY (genere, posizione)
 );
 
 -- DEFINIZIONE DELLE FUNZIONI E DEI TRIGGER
@@ -137,7 +148,7 @@ $$
         count integer;
     BEGIN
         SELECT COUNT(*) INTO count
-        FROM Giardino.PuòStare
+        FROM Giardino.PuoStare
         WHERE OLD.famiglia = sensibile_al_clima
         IF count <= 1 THEN
             RAISE EXCEPTION 'Una famiglia sensibile al clima deve avere almeno un clima a cui è sensibile';
@@ -148,6 +159,8 @@ $$;
 
 -- controllo che una famiglia sensibile al clima abbia almeno un clima a cui è sensibile
 CREATE TRIGGER check_sensibile_al_clima
-BEFORE DELETE ON Giardino.PuòStare
+BEFORE DELETE ON Giardino.PuoStare
 FOR EACH ROW
 EXECUTE PROCEDURE Giardino.check_sensibile_al_clima();
+
+-- Aggiornamento dell'attributo max_id di Genere
