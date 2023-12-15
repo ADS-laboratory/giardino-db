@@ -130,7 +130,7 @@ $$
         IF count <= 1 THEN
             RAISE EXCEPTION 'Un giardiniere deve avere almeno un orario';
         END IF;
-        RETURN NEW;
+        RETURN OLD;
     END;
 $$;
 
@@ -153,7 +153,7 @@ $$
         IF count <= 1 THEN
             RAISE EXCEPTION 'Una famiglia sensibile al clima deve avere almeno un clima a cui è sensibile';
         END IF;
-        RETURN NEW;
+        RETURN OLD;
     END;
 $$;
 
