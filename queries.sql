@@ -13,7 +13,7 @@ CREATE VIEW Giardino.Numero_Giardinieri AS V1(
     SELECT Posizione, COUNT(*) AS Numero_Giardinieri
     FROM Giardino.Posizione as Posizione
         JOIN Giardino.Pianta as Pianta ON Pianta.posizione = Posizione.codice
-        JOIN Giardino.EResponsabile as EResponsabile ON EResponsabile.Genere_Pianta = GP.Genere
+        JOIN Giardino.EResponsabile as EResponsabile ON EResponsabile.genere_gianta = Pianta.genere AND EResponsabile.numero_pianta = Pianta.numero
     GROUP BY Posizione
 )
 
