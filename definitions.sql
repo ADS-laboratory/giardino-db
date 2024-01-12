@@ -1,24 +1,24 @@
 
-CREATE schema Giardino;
+CREATE OR REPLACE schema Giardino;
 
 SET search_path TO Giardino;
 
 -- DEFINIZIONE DEI DOMINI
 
 -- Definizione del dominio COORDINATE
-CREATE domain COORDINATE AS REAL[2] 
+CREATE OR REPLACE domain COORDINATE AS REAL[2] 
     CONSTRAINT latitudine CHECK (value[0] >= -90 and value[0] <= 90)
     CONSTRAINT longitudine CHECK (value[1] >= -180 and value[1] <= 180)
     CONSTRAINT not_null CHECK (value[0] IS NOT NULL AND value[1] IS NOT NULL);
 
 -- DEFINIZIONE DELLE TABELLE
 
-CREATE TABLE Famiglia (
+CREATE OR REPLACE TABLE Famiglia (
     nome varchar(50) PRIMARY KEY,
     descrizione varchar(1000)
 );
 
-CREATE TABLE Genere (
+CREATE OR REPLACE TABLE Genere (
     nome varchar(50) PRIMARY KEY,
     famiglia varchar(50) REFERENCES Famiglia
         ON DELETE RESTRICT
@@ -27,17 +27,17 @@ CREATE TABLE Genere (
     max_id integer NOT NULL
 );
 
-CREATE TABLE SensibileAlClima (
+CREATE OR REPLACE TABLE SensibileAlClima (
     famiglia varchar(50) PRIMARY KEY REFERENCES Famiglia
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
-CREATE TABLE Clima (
+CREATE OR REPLACE TABLE Clima (
     nome varchar(50) PRIMARY KEY
 );
 
-CREATE TABLE PuoStare (
+CREATE OR REPLACE TABLE PuoStare (
     clima varchar(50) REFERENCES Clima
         ON DELETE CASCADE
         ON UPDATE CASCADE,
@@ -47,7 +47,7 @@ CREATE TABLE PuoStare (
     PRIMARY KEY (clima, sensibile_al_clima)
 );
 
-CREATE TABLE Posizione (
+CREATE OR REPLACE TABLE Posizione (
     codice char(5) PRIMARY KEY,
     clima varchar(50) REFERENCES Clima 
         ON DELETE RESTRICT
@@ -57,7 +57,7 @@ CREATE TABLE Posizione (
     coordinate COORDINATE UNIQUE
 );
 
-CREATE TABLE Pianta (
+CREATE OR REPLACE TABLE Pianta (
     numero integer,
     genere varchar(50) REFERENCES Genere 
         ON DELETE RESTRICT
@@ -69,13 +69,13 @@ CREATE TABLE Pianta (
     PRIMARY KEY (numero, genere)
 );
 
-CREATE TABLE Giardiniere (
+CREATE OR REPLACE TABLE Giardiniere (
     cf char(16) PRIMARY KEY,
     nome varchar(50) NOT NULL,
     cognome varchar(50) NOT NULL
 );
 
-CREATE TABLE EResponsabile (
+CREATE OR REPLACE TABLE EResponsabile (
     numero_pianta integer,
     genere_pianta varchar(50),
     giardiniere char(16) REFERENCES Giardiniere(cf)
@@ -87,14 +87,14 @@ CREATE TABLE EResponsabile (
         ON UPDATE CASCADE
 );
 
-CREATE TABLE Orario (
+CREATE OR REPLACE TABLE Orario (
     giorno_della_settimana smallint,
     ora_inizio time,
     ora_fine time,
     PRIMARY KEY (giorno_della_settimana, ora_inizio, ora_fine)
 );
 
-CREATE TABLE Lavora (
+CREATE OR REPLACE TABLE Lavora (
     giardiniere char(16) REFERENCES Giardiniere(cf)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
@@ -107,7 +107,7 @@ CREATE TABLE Lavora (
         ON UPDATE CASCADE
 );
 
-CREATE TABLE GP (
+CREATE OR REPLACE TABLE GP (
     genere varchar(50) REFERENCES Genere
         ON DELETE CASCADE
         ON UPDATE CASCADE,
@@ -119,7 +119,7 @@ CREATE TABLE GP (
 
 -- DEFINIZIONE DELLE FUNZIONI E DEI TRIGGER
 
--- controllo che un giardiniere abbia almeno un orario
+-- Controllo che un giardiniere abbia almeno un orario
 CREATE OR REPLACE FUNCTION check_orario_giardiniere()
 RETURNS TRIGGER LANGUAGE plpgsql AS 
 $$
@@ -136,13 +136,13 @@ $$
     END;
 $$;
 
--- controllo che un giardiniere abbia almeno un orario
-CREATE TRIGGER check_orario_giardiniere
+-- Controllo che un giardiniere abbia almeno un orario
+CREATE OR REPLACE TRIGGER check_orario_giardiniere
 BEFORE DELETE ON Lavora
 FOR EACH ROW
 EXECUTE PROCEDURE check_orario_giardiniere();
 
--- controllo che una famiglia sensibile al clima abbia almeno un clima a cui è sensibile
+-- Controllo che una famiglia sensibile al clima abbia almeno un clima a cui è sensibile
 CREATE OR REPLACE FUNCTION check_sensibile_al_clima()
 RETURNS TRIGGER LANGUAGE plpgsql AS
 $$
@@ -159,10 +159,16 @@ $$
     END;
 $$;
 
--- controllo che una famiglia sensibile al clima abbia almeno un clima a cui è sensibile
-CREATE TRIGGER check_sensibile_al_clima
+-- Controllo che una famiglia sensibile al clima abbia almeno un clima a cui è sensibile
+CREATE OR REPLACE TRIGGER check_sensibile_al_clima
 BEFORE DELETE ON PuoStare
 FOR EACH ROW
 EXECUTE PROCEDURE check_sensibile_al_clima();
 
 -- Aggiornamento dell'attributo max_id di Genere
+
+
+
+-- Aggiornamento della relazione GP
+
+-- Controllo vincolo principale
