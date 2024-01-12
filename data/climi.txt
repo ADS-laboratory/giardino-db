@@ -1,0 +1,5 @@
+tropical
+mediteranean
+continental
+temperate
+arid
