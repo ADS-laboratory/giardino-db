@@ -130,7 +130,8 @@ $$
         FROM Lavora
         WHERE OLD.giardiniere = giardiniere;
         IF count <= 1 THEN
-            RAISE EXCEPTION 'Un giardiniere deve avere almeno un orario';
+            RAISE NOTICE 'Un giardiniere deve avere almeno un orario';
+            RETURN NULL; -- annulla operazione
         END IF;
         RETURN OLD;
     END;
@@ -151,9 +152,10 @@ $$
     BEGIN
         SELECT COUNT(*) INTO count
         FROM PuoStare
-        WHERE OLD.famiglia = sensibile_al_clima;
+        WHERE OLD.sensibile_al_clima = sensibile_al_clima;
         IF count <= 1 THEN
-            RAISE EXCEPTION 'Una famiglia sensibile al clima deve avere almeno un clima a cui è sensibile';
+            RAISE NOTICE 'Una famiglia sensibile al clima deve avere almeno un clima a cui è sensibile';
+            RETURN NULL; -- annulla operazione
         END IF;
         RETURN OLD;
     END;
@@ -165,4 +167,4 @@ BEFORE DELETE ON PuoStare
 FOR EACH ROW
 EXECUTE PROCEDURE check_sensibile_al_clima();
 
--- Aggiornamento dell'attributo max_id di Genere
+-- aggiornamento dell'attributo max_id di Genere
