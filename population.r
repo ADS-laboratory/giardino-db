@@ -34,11 +34,11 @@ generi.famiglia <- sample(famiglie.nome, length(generi.nome), replace=T)
 generi_df <- data.frame(nome = generi.nome,
                         famiglia = generi.famiglia,
                         max_id = 0)
-dbWriteTable(con, name="Genere", value=generi_df, row.names=F)
+dbWriteTable(con, name="genere", value=generi_df, row.names=F)
 
 # Popolazioine tabella SensibileAlClima
 
-sensibili_df <- data.frame(famiglia = sample(v_famiglie, 10, replace=F))
+sensibili_df <- data.frame(famiglia = sample(famiglie.nome, 10, replace=F))
 dbWriteTable(con, name="SensibileAlClima", value=sensibili_df, row.names=F)
 
 # Popolazione tabella Clima
@@ -51,8 +51,9 @@ dbWriteTable(con, name="Clima", value=climi_df, row.names=F)
 
 # La tabella viene sovrapopolata, vengono eliminati i duplicati
 # e quindi vengono selezionati solo 40 record
-puostare.clima <- sample(v_climi, 60, replace=T)
-puostare.sensibile <- sample(sensibili_df, 60, replace=T)
+# TODO: find a better way to do this
+puostare.clima <- sample(v_climi, 100, replace=T)
+puostare.sensibile <- sample(sensibili_df$famiglia, 100, replace=T)
 puostare_df <- unique(data.frame(clima = puostare.clima,
                           sensibile = puostare.sensibile))
 puostare_df <- head(puostare_df, 40)
