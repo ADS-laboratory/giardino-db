@@ -1,24 +1,24 @@
 
-CREATE OR REPLACE schema Giardino;
+CREATE schema Giardino;
 
 SET search_path TO Giardino;
 
 -- DEFINIZIONE DEI DOMINI
 
 -- Definizione del dominio COORDINATE
-CREATE OR REPLACE domain COORDINATE AS REAL[2] 
+CREATE domain COORDINATE AS REAL[2] 
     CONSTRAINT latitudine CHECK (value[0] >= -90 and value[0] <= 90)
     CONSTRAINT longitudine CHECK (value[1] >= -180 and value[1] <= 180)
     CONSTRAINT not_null CHECK (value[0] IS NOT NULL AND value[1] IS NOT NULL);
 
 -- DEFINIZIONE DELLE TABELLE
 
-CREATE OR REPLACE TABLE Famiglia (
+CREATE TABLE Famiglia (
     nome varchar(50) PRIMARY KEY,
     descrizione varchar(1000)
 );
 
-CREATE OR REPLACE TABLE Genere (
+CREATE TABLE Genere (
     nome varchar(50) PRIMARY KEY,
     famiglia varchar(50) REFERENCES Famiglia
         ON DELETE RESTRICT
@@ -27,17 +27,17 @@ CREATE OR REPLACE TABLE Genere (
     max_id integer NOT NULL
 );
 
-CREATE OR REPLACE TABLE SensibileAlClima (
+CREATE TABLE SensibileAlClima (
     famiglia varchar(50) PRIMARY KEY REFERENCES Famiglia
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
 
-CREATE OR REPLACE TABLE Clima (
+CREATE TABLE Clima (
     nome varchar(50) PRIMARY KEY
 );
 
-CREATE OR REPLACE TABLE PuoStare (
+CREATE TABLE PuoStare (
     clima varchar(50) REFERENCES Clima
         ON DELETE CASCADE
         ON UPDATE CASCADE,
@@ -47,7 +47,7 @@ CREATE OR REPLACE TABLE PuoStare (
     PRIMARY KEY (clima, sensibile_al_clima)
 );
 
-CREATE OR REPLACE TABLE Posizione (
+CREATE TABLE Posizione (
     codice char(5) PRIMARY KEY,
     clima varchar(50) REFERENCES Clima 
         ON DELETE RESTRICT
@@ -57,7 +57,7 @@ CREATE OR REPLACE TABLE Posizione (
     coordinate COORDINATE UNIQUE
 );
 
-CREATE OR REPLACE TABLE Pianta (
+CREATE TABLE Pianta (
     numero integer,
     genere varchar(50) REFERENCES Genere 
         ON DELETE RESTRICT
@@ -69,13 +69,13 @@ CREATE OR REPLACE TABLE Pianta (
     PRIMARY KEY (numero, genere)
 );
 
-CREATE OR REPLACE TABLE Giardiniere (
+CREATE TABLE Giardiniere (
     cf char(16) PRIMARY KEY,
     nome varchar(50) NOT NULL,
     cognome varchar(50) NOT NULL
 );
 
-CREATE OR REPLACE TABLE EResponsabile (
+CREATE TABLE EResponsabile (
     numero_pianta integer,
     genere_pianta varchar(50),
     giardiniere char(16) REFERENCES Giardiniere(cf)
@@ -87,14 +87,14 @@ CREATE OR REPLACE TABLE EResponsabile (
         ON UPDATE CASCADE
 );
 
-CREATE OR REPLACE TABLE Orario (
+CREATE TABLE Orario (
     giorno_della_settimana smallint,
     ora_inizio time,
     ora_fine time,
     PRIMARY KEY (giorno_della_settimana, ora_inizio, ora_fine)
 );
 
-CREATE OR REPLACE TABLE Lavora (
+CREATE TABLE Lavora (
     giardiniere char(16) REFERENCES Giardiniere(cf)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
@@ -107,7 +107,7 @@ CREATE OR REPLACE TABLE Lavora (
         ON UPDATE CASCADE
 );
 
-CREATE OR REPLACE TABLE GP (
+CREATE TABLE GP (
     genere varchar(50) REFERENCES Genere
         ON DELETE CASCADE
         ON UPDATE CASCADE,
