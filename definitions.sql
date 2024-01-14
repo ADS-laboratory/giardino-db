@@ -7,9 +7,9 @@ SET search_path TO Giardino;
 
 -- Definizione del dominio COORDINATE
 CREATE domain COORDINATE AS REAL[2] 
-    CONSTRAINT latitudine CHECK (value[0] >= -90 and value[0] <= 90)
-    CONSTRAINT longitudine CHECK (value[1] >= -180 and value[1] <= 180)
-    CONSTRAINT not_null CHECK (value[0] IS NOT NULL AND value[1] IS NOT NULL);
+    CONSTRAINT latitudine CHECK (value[1] >= -90 and value[1] <= 90)
+    CONSTRAINT longitudine CHECK (value[2] >= -180 and value[2] <= 180)
+    CONSTRAINT not_null CHECK (value[1] IS NOT NULL AND value[2] IS NOT NULL);
 
 -- DEFINIZIONE DELLE TABELLE
 
@@ -106,6 +106,8 @@ CREATE TABLE Lavora (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
+-- check for non overlapping time intervals
 
 CREATE TABLE GP (
     genere varchar(50) REFERENCES Genere
