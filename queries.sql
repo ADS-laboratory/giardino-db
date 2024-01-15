@@ -3,12 +3,12 @@
 -- Data una Posizione trovare i Generi che possono stare solo lì
 
 SELECT genere
-FROM Giardino.GP as GP
-    JOIN Giardino.Posizione as Posizione ON Posizione.codice = GP.posizione
+FROM GP as GP
+    JOIN Posizione as Posizione ON Posizione.codice = GP.posizione
 WHERE Posizione.codice = 'P1' AND NOT EXISTS (
     SELECT *
-    FROM Giardino.GP as GP2
-        JOIN Giardino.Posizione as Posizione2 ON Posizione2.codice = GP2.posizione
+    FROM GP as GP2
+        JOIN Posizione as Posizione2 ON Posizione2.codice = GP2.posizione
     WHERE Posizione2.codice <> 'P1' AND GP2.genere = GP.genere
     );
 
@@ -16,15 +16,14 @@ WHERE Posizione.codice = 'P1' AND NOT EXISTS (
 -- Operazione 6
 -- Trovare la Posizione coperta da meno Giardinieri
 
-CREATE VIEW Giardino.Numero_Giardinieri AS V1(
-    SELECT Posizione, COUNT(*) AS Numero_Giardinieri
-    FROM Giardino.Posizione as Posizione
-        JOIN Giardino.Pianta as Pianta ON Pianta.posizione = Posizione.codice
-        JOIN Giardino.EResponsabile as EResponsabile ON EResponsabile.genere_gianta = Pianta.genere AND EResponsabile.numero_pianta = Pianta.numero
-    GROUP BY Posizione
-)
+CREATE VIEW V1 AS
+    SELECT Posizione, COUNT(DISTINCT EResponsabile.giardiniere) AS Numero_Giardinieri
+    FROM Posizione
+        JOIN Pianta ON Pianta.posizione = Posizione.codice
+        JOIN EResponsabile ON EResponsabile.genere_pianta = Pianta.genere AND EResponsabile.numero_pianta = Pianta.numero
+    GROUP BY Posizione;
 
-SELECT (*)
+SELECT *
 FROM V1
 WHERE Numero_Giardinieri <= ALL(SELECT Numero_Giardinieri FROM V1)
 ORDER BY Posizione;
