@@ -1,3 +1,43 @@
+-- Operazione 4
+-- Raggruppare le Piante di un certo Genere in numeri progressivi consecutivi
+-- Operazione di Batch
+-- non è un trigger perché non è un'operazione che si fa ad ogni inserimento
+-- è un'operazione che si fa una volta ogni tanto
+
+CREATE OR REPLACE FUNCTION aggiorna_numeri_pianta()
+RETURNS void LANGUAGE plpgsql AS
+$$
+    DECLARE
+        numero_pianta integer;
+        max_id integer;
+        genere_corrente varchar(50);
+    BEGIN
+        numero_pianta := 1;
+        max_id := 1;
+        genere_corrente := NULL;
+
+        FOR gemere IN SELECT nome FROM Genere LOOP
+
+            FOR pianta IN SELECT * FROM Pianta WHERE genere = genere_corrente LOOP
+                UPDATE Pianta
+                SET numero = numero_pianta
+                WHERE genere = genere_corrente AND numero = pianta.numero;
+                numero_pianta := numero_pianta + 1;
+            END LOOP;
+
+            max_id:= numero_pianta;
+            UPDATE Genere
+            SET max_id = max_id
+            WHERE nome = genere_corrente;
+
+            numero_pianta := 1;
+            genere_corrente := genere.nome;
+
+        END LOOP;
+        RETURN;
+    END;
+$$;
+
 
 -- Operazione 5
 -- Data una Posizione trovare i Generi che possono stare solo lì
@@ -32,7 +72,40 @@ ORDER BY Posizione;
 -- Operazione 7
 -- Trovare il numero di Generi di Piante il cui Giardiniere responsabile inizia a lavorare, tutti i giorni, almeno alle 8:00 e finisce almeno alle 17:00
 SELECT COUNT(DISTINCT Pianta.Genere)
-FROM Giardino.Pianta Pianta
-    JOIN Giardino.EResponsabile EResponsabile ON EResponsabile.Numero_Pianta = Pianta.Numero AND EResponsabile.Genere_Pianta = Pianta.Genere
-    JOIN Giardino.Lavora Lavora ON Lavora.Giardiniere = EResponsabile.Giardiniere
+FROM Pianta 
+    JOIN EResponsabile  ON EResponsabile.Numero_Pianta = Pianta.Numero AND EResponsabile.Genere_Pianta = Pianta.Genere
+    JOIN Lavora  ON Lavora.Giardiniere = EResponsabile.Giardiniere
     WHERE Lavora.Ora_Inizio >= '08:00:00' AND Lavora.Ora_Fine <= '17:00:00';
+
+
+-- Operazione 8
+-- Il Clima delle Posizioni in cui si trovano almeno 30 Piante del Genere x e almeno 40 del Genere y
+
+CREATE VIEW Numero_Piante_X AS
+    SELECT Posizione, COUNT(*) AS Numero_Piante
+    FROM Posizione
+        JOIN Pianta ON Pianta.posizione = Posizione.codice
+    WHERE Genere = 'G1'
+    GROUP BY Posizione, Genere;
+
+CREATE VIEW Numero_Piante_Y AS
+    SELECT Posizione, COUNT(*) AS Numero_Piante
+    FROM Posizione
+        JOIN Pianta ON Pianta.posizione = Posizione.codice
+    WHERE Genere = 'G2'
+    GROUP BY Posizione, Genere;
+
+
+SELECT Clima, codice
+FROM Posizione
+WHERE codice IN (
+    SELECT Numero_Piante_X.Posizione
+    FROM Numero_Piante_X
+    WHERE Numero_Piante_X.Numero_Piante >= 30
+    INTERSECT
+    SELECT Numero_Piante_Y.Posizione
+    FROM Numero_Piante_Y
+    WHERE Numero_Piante_Y.Numero_Piante >= 40
+    );
+
+//TODO: Rivedere operazione 8
