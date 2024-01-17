@@ -1,7 +1,49 @@
 -- Operazione 1
 -- Aggiunta di una nuova PIANTA di un certo GENERE
-CREATE OR REPLACE FUNCTION aggiungi_pianta()
+CREATE OR REPLACE FUNCTION aggiungi_pianta(
+    genere_pianta varchar(50),
+    posizione_pianta char(5)
+)
 RETURNS void LANGUAGE plpgsql AS
+$$
+    DECLARE
+        numero_pianta integer;
+    BEGIN
+        -- Calcolo numero progressivo della pianta
+        SELECT max_id INTO numero_pianta FROM Genere WHERE nome = genere_pianta;
+        IF numero_pianta IS NULL THEN
+            RAISE NOTICE 'Il genere % non esiste', genere_pianta;
+            RETURN;
+        END IF;
+        numero_pianta := numero_pianta + 1;
+
+        -- Inserimento della pianta
+        -- Se non esiste la posizione_pianta l'eccezione non è gestita
+        INSERT INTO Pianta VALUES (numero_pianta, genere_pianta, posizione_pianta);
+
+        -- Aggiornamento del numero progressivo del genere
+        UPDATE Genere
+        SET max_id = numero_pianta
+        WHERE nome = genere_pianta;
+        RETURN;
+    END;
+$$;
+
+-- Operazione 2
+-- Rimozione di una PIANTA
+CREATE OR REPLACE FUNCTION rimuovi_pianta(
+    genere_pianta varchar(50),
+    numero_pianta integer
+)
+RETURNS void LANGUAGE plpgsql AS
+$$
+    BEGIN
+        -- Rimozione della pianta
+        DELETE FROM Pianta
+        WHERE genere = genere_pianta AND numero = numero_pianta;
+        RETURN;
+    END;
+$$;
 
 -- Operazione 4
 -- Raggruppare le Piante di un certo Genere in numeri progressivi consecutivi
@@ -9,7 +51,7 @@ RETURNS void LANGUAGE plpgsql AS
 -- non è un trigger perché non è un'operazione che si fa ad ogni inserimento
 -- è un'operazione che si fa una volta ogni tanto
 
-CREATE OR REPLACE FUNCTION aggiorna_numeri_pianta()
+CREATE OR REPLACE FUNCTION aggiorna_numeri_piante()
 RETURNS void LANGUAGE plpgsql AS
 $$
     DECLARE
@@ -18,15 +60,15 @@ $$
         genere_corrente record;
         pianta_corrente record;
     BEGIN
-        numero_pianta := 1;
+        numero_pianta := 0;
 
         FOR genere_corrente IN SELECT * FROM Genere LOOP
 
             FOR pianta_corrente IN SELECT * FROM Pianta WHERE genere = genere_corrente.nome ORDER BY numero LOOP
+                numero_pianta := numero_pianta + 1;
                 UPDATE Pianta
                 SET numero = numero_pianta
                 WHERE genere = genere_corrente.nome AND numero = pianta_corrente.numero;
-                numero_pianta := numero_pianta + 1;
             END LOOP;
 
             max_id_corrente:= numero_pianta;
@@ -34,7 +76,7 @@ $$
             SET max_id = max_id_corrente
             WHERE nome = genere_corrente.nome;
 
-            numero_pianta := 1;
+            numero_pianta := 0;
 
         END LOOP;
         RETURN;
