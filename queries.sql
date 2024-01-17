@@ -1,3 +1,8 @@
+-- Operazione 1
+-- Aggiunta di una nuova PIANTA di un certo GENERE
+CREATE OR REPLACE FUNCTION aggiungi_pianta()
+RETURNS void LANGUAGE plpgsql AS
+
 -- Operazione 4
 -- Raggruppare le Piante di un certo Genere in numeri progressivi consecutivi
 -- Operazione di Batch
@@ -9,31 +14,27 @@ RETURNS void LANGUAGE plpgsql AS
 $$
     DECLARE
         numero_pianta integer;
-        max_id integer;
-        genere_corrente varchar(50);
-        genere record;
-        pianta record;
+        max_id_corrente integer;
+        genere_corrente record;
+        pianta_corrente record;
     BEGIN
         numero_pianta := 1;
-        max_id := 1;
-        genere_corrente := NULL;
 
-        FOR genere IN SELECT nome FROM Genere LOOP
+        FOR genere_corrente IN SELECT * FROM Genere LOOP
 
-            FOR pianta IN SELECT * FROM Pianta WHERE genere = genere_corrente LOOP
+            FOR pianta_corrente IN SELECT * FROM Pianta WHERE genere = genere_corrente.nome ORDER BY numero LOOP
                 UPDATE Pianta
                 SET numero = numero_pianta
-                WHERE genere = genere_corrente AND numero = pianta.numero;
+                WHERE genere = genere_corrente.nome AND numero = pianta_corrente.numero;
                 numero_pianta := numero_pianta + 1;
             END LOOP;
 
-            max_id:= numero_pianta;
+            max_id_corrente:= numero_pianta;
             UPDATE Genere
-            SET max_id = max_id
-            WHERE nome = genere_corrente;
+            SET max_id = max_id_corrente
+            WHERE nome = genere_corrente.nome;
 
             numero_pianta := 1;
-            genere_corrente := genere.nome;
 
         END LOOP;
         RETURN;
