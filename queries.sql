@@ -11,12 +11,14 @@ $$
         numero_pianta integer;
         max_id integer;
         genere_corrente varchar(50);
+        genere record;
+        pianta record;
     BEGIN
         numero_pianta := 1;
         max_id := 1;
         genere_corrente := NULL;
 
-        FOR gemere IN SELECT nome FROM Genere LOOP
+        FOR genere IN SELECT nome FROM Genere LOOP
 
             FOR pianta IN SELECT * FROM Pianta WHERE genere = genere_corrente LOOP
                 UPDATE Pianta
@@ -43,13 +45,13 @@ $$;
 -- Data una Posizione trovare i Generi che possono stare solo lì
 
 SELECT genere
-FROM GP as GP
-    JOIN Posizione as Posizione ON Posizione.codice = GP.posizione
-WHERE Posizione.codice = 'P1' AND NOT EXISTS (
+FROM GP
+    JOIN Posizione ON Posizione.codice = GP.posizione
+WHERE Posizione.codice = 'VsqbR' AND NOT EXISTS (
     SELECT *
     FROM GP as GP2
         JOIN Posizione as Posizione2 ON Posizione2.codice = GP2.posizione
-    WHERE Posizione2.codice <> 'P1' AND GP2.genere = GP.genere
+    WHERE Posizione2.codice <> 'VsqbR' AND GP2.genere = GP.genere
     );
 
 
@@ -79,20 +81,22 @@ FROM Pianta
 
 
 -- Operazione 8
--- Il Clima delle Posizioni in cui si trovano almeno 30 Piante del Genere x e almeno 40 del Genere y
+-- Il Clima delle Posizioni in cui si trovano almeno 10 Piante del Genere x e almeno 20 del Genere y
 
-CREATE VIEW Numero_Piante_X AS
+-- Il numero di piante del genere x in ogni posizione
+CREATE or REPLACE VIEW Numero_Piante_X AS
     SELECT Posizione, COUNT(*) AS Numero_Piante
     FROM Posizione
         JOIN Pianta ON Pianta.posizione = Posizione.codice
-    WHERE Genere = 'G1'
+    WHERE Genere = 'Alplily'
     GROUP BY Posizione, Genere;
 
-CREATE VIEW Numero_Piante_Y AS
+-- Il numero di piante del genere y in ogni posizione
+CREATE OR REPLACE VIEW Numero_Piante_Y AS
     SELECT Posizione, COUNT(*) AS Numero_Piante
     FROM Posizione
         JOIN Pianta ON Pianta.posizione = Posizione.codice
-    WHERE Genere = 'G2'
+    WHERE Genere = 'False Flax'
     GROUP BY Posizione, Genere;
 
 
@@ -101,11 +105,11 @@ FROM Posizione
 WHERE codice IN (
     SELECT Numero_Piante_X.Posizione
     FROM Numero_Piante_X
-    WHERE Numero_Piante_X.Numero_Piante >= 30
+    WHERE Numero_Piante_X.Numero_Piante >= 10
     INTERSECT
     SELECT Numero_Piante_Y.Posizione
     FROM Numero_Piante_Y
-    WHERE Numero_Piante_Y.Numero_Piante >= 40
-    );
+    WHERE Numero_Piante_Y.Numero_Piante >= 20
+);
 
-//TODO: Rivedere operazione 8
+-- TODO: Rivedere operazione 8
