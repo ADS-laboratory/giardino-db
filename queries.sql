@@ -89,12 +89,10 @@ $$;
 
 SELECT genere
 FROM GP
-    JOIN Posizione ON Posizione.codice = GP.posizione
-WHERE Posizione.codice = 'VsqbR' AND NOT EXISTS (
+WHERE posizione = 'VsqbR' AND NOT EXISTS (
     SELECT *
     FROM GP as GP2
-        JOIN Posizione as Posizione2 ON Posizione2.codice = GP2.posizione
-    WHERE Posizione2.codice <> 'VsqbR' AND GP2.genere = GP.genere
+    WHERE GP2.posizione <> 'VsqbR' AND GP2.genere = GP.genere
     );
 
 
