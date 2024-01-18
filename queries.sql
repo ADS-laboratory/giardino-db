@@ -161,7 +161,8 @@ FROM Pianta
 
 -- Operazione 8
 -- Il Clima delle Posizioni in cui si trovano almeno 10 Piante del Genere x e almeno 20 del Genere y
-
+-- Pituri
+-- Nutrush
 CREATE OR REPLACE FUNCTION genera_meno_posizione(
     genere_x varchar(50),
     genere_y varchar(50)
@@ -169,13 +170,12 @@ CREATE OR REPLACE FUNCTION genera_meno_posizione(
 RETURNS TABLE (clima varchar(50), codice char(5)) LANGUAGE plpgsql AS
 $$
     BEGIN
-        RETURN QUERY
          -- Il numero di piante del genere x in ogni posizione
-        CREATE or REPLACE VIEW Numero_Piante_X AS
+        CREATE OR REPLACE VIEW Numero_Piante_X AS
             SELECT Posizione, COUNT(*) AS Numero_Piante
-            FROM Posizione
-                JOIN Pianta ON Pianta.posizione = Posizione.codice
-            WHERE Genere = genere_x
+            FROM (Posizione
+                JOIN Pianta ON Pianta.posizione = Posizione.codice) AS A
+            WHERE A.genere = genere_x
             GROUP BY Posizione, Genere;
 
         -- Il numero di piante del genere y in ogni posizione
@@ -186,7 +186,7 @@ $$
             WHERE Genere = genere_y
             GROUP BY Posizione, Genere;
 
-
+        RETURN QUERY
         SELECT Clima, codice
         FROM Posizione
         WHERE codice IN (
