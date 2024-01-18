@@ -45,6 +45,28 @@ $$
     END;
 $$;
 
+
+-- Operazione 3
+-- Modifica del Clima di una certa Posizione
+
+CREATE OR REPLACE FUNCTION modifica_clima(
+    codice_posizione char(5),
+    nuovo_clima varchar(50)
+)
+RETURNS void LANGUAGE plpgsql AS
+$$
+    BEGIN
+        -- Modifica del clima
+        UPDATE Posizione
+        SET clima = nuovo_clima
+        WHERE codice = codice_posizione;
+        RETURN;
+    END;
+$$;
+
+-- Trigger o metto qui il controllo?
+
+
 -- Operazione 4
 -- Raggruppare le Piante di un certo Genere in numeri progressivi consecutivi
 -- Operazione di Batch
@@ -87,13 +109,22 @@ $$;
 -- Operazione 5
 -- Data una Posizione trovare i Generi che possono stare solo lì
 
-SELECT genere
-FROM GP
-WHERE posizione = 'VsqbR' AND NOT EXISTS (
-    SELECT *
-    FROM GP as GP2
-    WHERE GP2.posizione <> 'VsqbR' AND GP2.genere = GP.genere
-    );
+CREATE OR REPLACE FUNCTION genera_meno_posizione(
+)
+RETURNS TABLE (generi varchar(50)) LANGUAGE plpgsql AS
+$$
+    BEGIN
+        RETURN QUERY
+        CREATE VIEW Conta_Posizioni AS
+        SELECT genere, COUNT(*) AS Numero_Posizioni
+        FROM GP
+        GROUP BY genere;
+
+        SELECT genere
+        FROM Conta_Posizioni
+        WHERE Numero_Posizioni = (SELECT MIN(Numero_Posizioni) FROM Conta_Posizioni);
+    END;
+$$;
 
 
 -- Operazione 6
