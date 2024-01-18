@@ -203,3 +203,28 @@ $$
         );
     END;
 $$;
+
+-- Operazione 9
+-- Data una pianta trovare la posizione meno affollata in cui può essere spostata.
+-- TODO: funziona?
+CREATE OR REPLACE FUNCTION trova_posizione_alternativa(
+    genere_pianta varchar(50),
+    numero_pianta integer
+)
+RETURNS TABLE (codice char(5)) LANGUAGE plpgsql AS
+$$
+    BEGIN
+        RETURN QUERY
+        SELECT Posizione.codice
+        FROM Posizione
+        WHERE Posizione.codice IN (
+            SELECT posizione
+            FROM GP
+            WHERE genere = genere_pianta
+        )
+        EXCEPT
+        SELECT posizione
+        FROM Pianta
+        WHERE genere = genere_pianta AND numero = numero_pianta;
+    END;
+$$;
