@@ -169,10 +169,15 @@ BEFORE DELETE ON PuoStare
 FOR EACH ROW
 EXECUTE PROCEDURE check_sensibile_al_clima();
 
--- Aggiornamento dell'attributo max_id di Genere
-
-
+-- Aggiornamento dell'attributo max_id di Genere, 
+-- controllato nell'operazione di aggiunta, spiegare perché nel file
 
 -- Aggiornamento della relazione GP
+
+-- Sensibile al clima only append
+-- PuoStare  only append
+
+-- modifica clima
+-- aggiunta pianta
 
 -- Controllo vincolo principale

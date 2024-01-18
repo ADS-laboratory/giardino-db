@@ -109,17 +109,16 @@ $$;
 -- Operazione 5
 -- Trovare il Genere di Piante che si trova in meno Posizioni
 
-CREATE OR REPLACE FUNCTION genera_meno_posizione(
-)
+CREATE OR REPLACE FUNCTION genera_meno_posizione()
 RETURNS TABLE (generi varchar(50)) LANGUAGE plpgsql AS
 $$
     BEGIN
-        RETURN QUERY
-        CREATE VIEW Conta_Posizioni AS
+        CREATE OR REPLACE VIEW Conta_Posizioni AS
         SELECT genere, COUNT(*) AS Numero_Posizioni
         FROM GP
         GROUP BY genere;
 
+        RETURN QUERY
         SELECT genere
         FROM Conta_Posizioni
         WHERE Numero_Posizioni = (SELECT MIN(Numero_Posizioni) FROM Conta_Posizioni);
@@ -130,22 +129,22 @@ $$;
 -- Operazione 6
 -- Trovare la Posizione coperta da meno Giardinieri
 
-CREATE OR REPLACE FUNCTION posizione_con_meno_giardinieri()
-RETURNS TABLE (posizione char(5), numero_Giardinieri integer) LANGUAGE plpgsql AS
+CREATE OR REPLACE FUNCTION posizioni_con_meno_giardinieri()
+RETURNS TABLE (posizione char(5)) LANGUAGE plpgsql AS
 $$
     BEGIN
-        RETURN QUERY
         -- Il numero di giardinieri per ogni posizione
-        CREATE VIEW Giardinieri_Per_Posizione AS
+        CREATE OR REPLACE VIEW Giardinieri_Per_Posizione AS
             SELECT Posizione, COUNT(DISTINCT EResponsabile.giardiniere) AS numero_Giardinieri
             FROM Posizione
                 JOIN Pianta ON Pianta.posizione = Posizione.codice
                 JOIN EResponsabile ON EResponsabile.genere_pianta = Pianta.genere AND EResponsabile.numero_pianta = Pianta.numero
             GROUP BY Posizione;
 
-        SELECT *
+        RETURN QUERY
+        SELECT Giardinieri_Per_Posizione.posizione
         FROM Giardinieri_Per_Posizione
-        WHERE numero_Giardinieri = (SELECT MIN(numero_Giardinieri) FROM Giardinieri_Per_Posizione);
+        WHERE numero_Giardinieri = (SELECT MIN(numero_Giardinieri) FROM Giardinieri_Per_Posizione)
         ORDER BY Posizione;
     END;
 $$;
