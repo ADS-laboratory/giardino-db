@@ -22,6 +22,9 @@ $$
         INSERT INTO Pianta VALUES (numero_pianta, genere_pianta, posizione_pianta);
 
         -- Aggiornamento del numero progressivo del genere
+        -- Quest'operazione non è delegata ad un trigger perchè dovremmo calcolarci ogni
+        -- volta il max (e non converrebbe più avere l'attributo derivato) oppure dovremmo
+        -- fare solo +1 fidandoci che l'inserimento sia stato fatto con questa operazione
         UPDATE Genere
         SET max_id = numero_pianta
         WHERE nome = genere_pianta;
@@ -107,7 +110,7 @@ $$;
 
 
 -- Operazione 5
--- Trovare il Genere di Piante che si trova in meno Posizioni
+-- Trovare il Genere di Piante che può stare in meno Posizioni
 
 CREATE OR REPLACE FUNCTION genera_meno_posizione()
 RETURNS TABLE (generi varchar(50)) LANGUAGE plpgsql AS
