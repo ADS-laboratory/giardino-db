@@ -37,6 +37,16 @@ for (i in 1:length(ore))
 
 
 # Plot
-png(file="saving_plot2.png")
+png(file="plots_results/box1.png")
 boxplot(ore_lavoro ~ ora, data=df, xlab="Ora del giorno", ylab="Giardinieri", main="Ore di lavoro per giorno della settimana", range="0")
 dev.off()
+
+# create matrix from dataframe x: ora, y: giorno della settimana, value: ore di lavoro
+mat <- matrix(df$ore_lavoro, nrow=length(unique(df$giorno_della_settimana)), ncol=length(unique(df$ora)))
+
+png(file="plots_results/heatmap1.png")
+heatmap(mat, Rowv=NA, Colv=NA, labRow=unique(df$giorno_della_settimana), labCol=unique(df$ora), main="Ore di lavoro per giorno della settimana", xlab="Ora del giorno", ylab="Giorno della settimana")
+dev.off()
+
+# Strip chart, x: famiglie, y: numero giardinieri per genere
+
