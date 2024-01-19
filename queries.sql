@@ -165,6 +165,7 @@ FROM Pianta
 -- Operazione 8
 -- Il Clima delle Posizioni in cui si trovano almeno 10 Piante del Genere x e almeno 20 del Genere y
 
+-- restituisce una tabella con due colonne: posizione e numero di piante in quella posizione
 CREATE OR REPLACE FUNCTION piante_posizione(
     genere_ricercato varchar(50)
 )
@@ -180,6 +181,8 @@ $$
     END;
 $$;
 
+-- restituisce una tabella con due colonne: clima e codice della posizione
+-- utilizza la funzione ausiliare piante_posizione
 CREATE OR REPLACE FUNCTION clima_delle_posizioni(
     genere_x varchar(50),
     genere_y varchar(50)
