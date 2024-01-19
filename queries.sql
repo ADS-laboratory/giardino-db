@@ -164,45 +164,45 @@ FROM Pianta
 
 -- Operazione 8
 -- Il Clima delle Posizioni in cui si trovano almeno 10 Piante del Genere x e almeno 20 del Genere y
--- Pituri
--- Nutrush
-CREATE OR REPLACE FUNCTION genera_meno_posizione(
+
+CREATE OR REPLACE FUNCTION piante_posizione(
+    genere_ricercato varchar(50)
+)
+RETURNS TABLE (posizione_pianta char(5), numero_piante bigint) LANGUAGE plpgsql AS
+$$
+    BEGIN
+        RETURN QUERY
+        SELECT Posizione, COUNT(*) AS Numero_Piante
+        FROM (Posizione
+            JOIN Pianta ON Pianta.posizione = Posizione.codice) AS A
+        WHERE A.genere = genere_ricercato
+        GROUP BY Posizione, Genere;
+    END;
+$$;
+
+CREATE OR REPLACE FUNCTION clima_delle_posizioni(
     genere_x varchar(50),
     genere_y varchar(50)
 )
-RETURNS TABLE (clima varchar(50), codice char(5)) LANGUAGE plpgsql AS
+RETURNS TABLE (clima_posizione varchar(50), codice_posizione char(5)) LANGUAGE plpgsql AS
 $$
     BEGIN
-         -- Il numero di piante del genere x in ogni posizione
-        CREATE OR REPLACE VIEW Numero_Piante_X AS
-            SELECT Posizione, COUNT(*) AS Numero_Piante
-            FROM (Posizione
-                JOIN Pianta ON Pianta.posizione = Posizione.codice) AS A
-            WHERE A.genere = genere_x
-            GROUP BY Posizione, Genere;
-
-        -- Il numero di piante del genere y in ogni posizione
-        CREATE OR REPLACE VIEW Numero_Piante_Y AS
-            SELECT Posizione, COUNT(*) AS Numero_Piante
-            FROM Posizione
-                JOIN Pianta ON Pianta.posizione = Posizione.codice
-            WHERE Genere = genere_y
-            GROUP BY Posizione, Genere;
-
         RETURN QUERY
+
         SELECT Clima, codice
         FROM Posizione
         WHERE codice IN (
-            SELECT Numero_Piante_X.Posizione
-            FROM Numero_Piante_X
-            WHERE Numero_Piante_X.Numero_Piante >= 10
+            SELECT Numero_Piante_X.posizione_pianta
+            FROM piante_posizione(genere_x) AS Numero_Piante_X
+            WHERE Numero_Piante_X.Numero_Piante >= 5
             INTERSECT
-            SELECT Numero_Piante_Y.Posizione
-            FROM Numero_Piante_Y
-            WHERE Numero_Piante_Y.Numero_Piante >= 20
+            SELECT Numero_Piante_Y.posizione_pianta
+            FROM piante_posizione(genere_y) AS Numero_Piante_Y
+            WHERE Numero_Piante_Y.Numero_Piante >= 10
         );
     END;
 $$;
+
 
 -- Operazione 9
 -- Data una pianta trovare la posizione (o le posizioni se più di una) meno affollata in
