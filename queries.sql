@@ -205,9 +205,10 @@ $$
 $$;
 
 -- Operazione 9
--- Data una pianta trovare la posizione meno affollata in cui può essere spostata.
+-- Data una pianta trovare la posizione (o le posizioni se più di una) meno affollata in
+-- cui può essere spostata.
 -- TODO: funziona?
-CREATE OR REPLACE FUNCTION trova_posizione_alternativa(
+CREATE OR REPLACE FUNCTION trova_posizioni_alternative(
     genere_pianta varchar(50),
     numero_pianta integer
 )
@@ -215,16 +216,47 @@ RETURNS TABLE (codice char(5)) LANGUAGE plpgsql AS
 $$
     BEGIN
         RETURN QUERY
-        SELECT Posizione.codice
-        FROM Posizione
-        WHERE Posizione.codice IN (
-            SELECT posizione
-            FROM GP
-            WHERE genere = genere_pianta
-        )
-        EXCEPT
-        SELECT posizione
+        -- Trovo la posizione (o le posizioni) meno affollata tra quelle trovate con la
+        -- funzione di supporto trova_posizioni_candidate.
+        SELECT Candidati.posizione
+        FROM trova_posizioni_candidate(genere_pianta, numero_pianta) AS Candidati
+        WHERE numero_piante = (
+            SELECT MIN(numero_piante)
+            FROM trova_posizioni_candidate(genere_pianta, numero_pianta)
+        );
+    END;
+$$;
+
+CREATE OR REPLACE FUNCTION trova_posizioni_candidate(
+    genere_pianta varchar(50),
+    numero_pianta integer
+)
+RETURNS TABLE (posizione char(5), numero_piante bigint) LANGUAGE plpgsql AS
+$$
+    DECLARE
+        posizione_corrente char(5);
+    BEGIN
+        -- Trovo la posizione corrente in cui si trova la pianta.
+        SELECT Pianta.posizione INTO posizione_corrente
         FROM Pianta
         WHERE genere = genere_pianta AND numero = numero_pianta;
+
+        RETURN QUERY
+        -- Trovo tutte le posizioni alternative in cui può stare la pianta.
+        SELECT *
+        FROM (
+            -- Trovo le posizioni in cui può stare la pianta. Per ogni posizione trovo il
+            -- numero di piante.
+            SELECT Pianta.posizione, COUNT(*) AS numero_piante
+            FROM Pianta
+            WHERE Pianta.posizione IN (
+                SELECT GP.posizione
+                FROM GP
+                WHERE genere = genere_pianta
+            )
+            -- Escludo la posizione corrente.
+            AND Pianta.posizione <> posizione_corrente
+            GROUP BY Pianta.posizione
+        );
     END;
 $$;
