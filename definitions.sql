@@ -107,7 +107,8 @@ CREATE TABLE Lavora (
         ON UPDATE CASCADE
 );
 
--- check for non overlapping time intervals
+-- TODO: check for non overlapping time intervals
+-- TODO: ora_inizio < ora_fine
 
 CREATE TABLE GP (
     genere varchar(50) REFERENCES Genere

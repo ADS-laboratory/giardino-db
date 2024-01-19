@@ -37,10 +37,16 @@ dbWriteTable(con, name="famiglia", value=famiglie_df, row.names=F, append=T)
 
 generi.nome <- readLines("data/generi.txt")
 generi.famiglia <- sample(famiglie.nome, length(generi.nome), replace=T)
-# TODO: test what happens with max_id
+
+# partiziona randomicamente il numero di piante per genere
+# x è un vettore di lunghezza pari al numero di generi i cui elementi
+# se sommati danno il numero di piante
+piante_len <- 25000
+x <- diff(sort(c(sample(1:piante_len, length(generi.nome)-1), 0, piante_len)))
+
 generi_df <- data.frame(nome = generi.nome,
                         famiglia = generi.famiglia,
-                        max_id = 0)
+                        max_id = x)
 dbWriteTable(con, name="genere", value=generi_df, row.names=F, append=T)
 
 # Popolazioine tabella SensibileAlClima
@@ -110,11 +116,6 @@ dbWriteTable(con, name="gp", value=gp, row.names=F, append=T)
 
 # Popolazione tabella Pianta
 
-piante_len <- 25000
-# partiziona randomicamente il numero di piante per genere
-# x è un vettore di lunghezza pari al numero di generi i cui elementi
-# se sommati danno il numero di piante
-x <- diff(sort(c(sample(1:piante_len, length(generi.nome)-1), 0, piante_len)))
 piante_df <- data.frame(numero=NULL, genere=NULL, posizione=NULL)
 # per ogni genere
 for (i in 1:length(generi.nome))
@@ -174,7 +175,7 @@ for (i in 1:7)
                                      ora_fine=orari.fine))
 }
 
-dbWriteTable(con, name="orario", value=orari_df, row.names=F, append=T)
+dbWriteTable(con, name="orario", value=unique(orari_df), row.names=F, append=T)
 
 # Popolazione tabella Lavora
 
