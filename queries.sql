@@ -1,3 +1,5 @@
+SET search_path TO Giardino;
+
 -- Operazione 1
 -- Aggiunta di una nuova PIANTA di un certo GENERE
 CREATE OR REPLACE FUNCTION aggiungi_pianta(
@@ -154,12 +156,27 @@ $$;
 
 
 -- Operazione 7
--- Trovare il numero di Generi di Piante il cui Giardiniere responsabile inizia a lavorare, tutti i giorni, almeno alle 8:00 e finisce almeno alle 17:00
-SELECT COUNT(DISTINCT Pianta.Genere)
-FROM Pianta 
-    JOIN EResponsabile  ON EResponsabile.Numero_Pianta = Pianta.Numero AND EResponsabile.Genere_Pianta = Pianta.Genere
-    JOIN Lavora  ON Lavora.Giardiniere = EResponsabile.Giardiniere
-    WHERE Lavora.Ora_Inizio >= '08:00:00' AND Lavora.Ora_Fine <= '17:00:00';
+-- Trovare il numero di Generi delle Piante il cui Giardiniere responsabile lavora almeno
+-- dalle 8:00 alle 17:00 tutti i giorni in cui lavora.
+CREATE OR REPLACE FUNCTION numero_generi_giardiniere()
+RETURNS bigint LANGUAGE plpgsql AS
+$$
+    BEGIN
+        SELECT Count(DISTINCT Genere)--, Numero--giardiniere
+        FROM Pianta-- join EResponsabile on Pianta.Numero = EResponsabile.Numero_Pianta AND Pianta.Genere = EResponsabile.Genere_Pianta
+        WHERE (Genere, Numero) NOT IN (SELECT DISTINCT Pianta.Genere, Pianta.Numero
+            FROM Pianta
+                LEFT JOIN EResponsabile ON EResponsabile.Numero_Pianta = Pianta.Numero AND EResponsabile.Genere_Pianta = Pianta.Genere
+                LEFT JOIN Lavora ON Lavora.Giardiniere = EResponsabile.Giardiniere
+            WHERE Lavora.Ora_inizio > '12:00:00' OR Lavora.Ora_fine < '14:00:00' OR EResponsabile.Giardiniere IS NULL);
+    END;
+$$;
+
+SELECT *
+FROM Lavora
+WHERE giardiniere NOT IN (SELECT DISTINCT Giardiniere
+    FROM Lavora
+    WHERE Lavora.Ora_inizio > '15:00:00' OR Lavora.Ora_fine < '17:00:00');
 
 
 -- Operazione 8
@@ -206,14 +223,13 @@ $$
     END;
 $$;
 
-
--- Operazione 9
+------------------------------------------------------------------------------------------
+-- OPERAZIONE 9
 -- Data una pianta trovare la posizione (o le posizioni se più di una) meno affollata in
 -- cui può essere spostata.
--- TODO: funziona?
 
--- Trovo la posizione (o le posizioni) meno affollata tra quelle trovate con la
--- funzione di supporto trova_posizioni_candidate.
+-- Trovo la posizione (o le posizioni) meno affollata tra quelle trovate con la funzione
+-- di supporto trova_posizioni_candidate.
 CREATE OR REPLACE FUNCTION trova_posizioni_alternative(
     genere_pianta varchar(50),
     numero_pianta integer
@@ -231,9 +247,7 @@ $$
     END;
 $$;
 
-
-
-
+-- Trovo tutte le posizioni alternative in cui può stare la pianta.
 CREATE OR REPLACE FUNCTION trova_posizioni_candidate(
     genere_pianta varchar(50),
     numero_pianta integer
@@ -249,21 +263,31 @@ $$
         WHERE genere = genere_pianta AND numero = numero_pianta;
 
         RETURN QUERY
-        -- Trovo tutte le posizioni alternative in cui può stare la pianta.
-        SELECT *
-        FROM (
-            -- Trovo le posizioni in cui può stare la pianta. Per ogni posizione trovo il
-            -- numero di piante.
-            SELECT Pianta.posizione, COUNT(*) AS numero_piante
-            FROM Pianta
-            WHERE Pianta.posizione IN (
-                SELECT GP.posizione
-                FROM GP
-                WHERE genere = genere_pianta
-            )
-            -- Escludo la posizione corrente.
-            AND Pianta.posizione <> posizione_corrente
-            GROUP BY Pianta.posizione
-        );
+        -- Trovo le posizioni in cui può stare la pianta. Per ogni posizione trovo il
+        -- numero di piante.
+        SELECT Pianta.posizione, COUNT(*) AS numero_piante
+        FROM Pianta
+        WHERE Pianta.posizione IN (
+            SELECT GP.posizione
+            FROM GP
+            WHERE genere = genere_pianta
+        )
+        -- Escludo la posizione corrente.
+        AND Pianta.posizione <> posizione_corrente
+        GROUP BY Pianta.posizione;
     END;
 $$;
+
+-- TEST 1
+-- SELECT trova_posizioni_alternative('Zulu Fescue', 4);
+-- Expected output:
+-- xeen9
+-- Infatti SELECT Count(*) FROM Pianta WHERE Posizione='xeen9'; = 2670
+-- (perchè Zulu Fescue 4 si trova già in 1D7hg)
+
+-- TEST 2
+-- SELECT trova_posizioni_alternative('Zulu Fescue', 1);
+-- Expected output:
+-- 1D7hg
+-- Infatti SELECT Count(*) FROM Pianta WHERE Posizione='1D7hg'; = 2454
+------------------------------------------------------------------------------------------

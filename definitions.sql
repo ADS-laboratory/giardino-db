@@ -216,13 +216,13 @@ FOR EACH ROW
 EXECUTE PROCEDURE check_piante_posizione();
 
 -- TEST 1
-UPDATE Posizione
-SET clima = 'tropical'
-WHERE codice = 'VsqbR';
+-- UPDATE Posizione
+-- SET clima = 'tropical'
+-- WHERE codice = 'F2AHZ';
 -- Expected output:
--- NOTICE:  La famiglia Cuscutaceae non può stare nel clima tropical
+-- NOTICE:  La famiglia Asteraceae non può stare nel clima tropical
 -- Check correctness:
--- SELECT * FROM PuoStare WHERE sensibile_al_clima = 'Cuscutaceae';
+-- SELECT * FROM PuoStare WHERE sensibile_al_clima = 'Asteraceae';
 ------------------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------------------
@@ -252,9 +252,9 @@ FOR EACH ROW
 EXECUTE PROCEDURE aggiorna_gp();
 
 -- TEST 1
-UPDATE Posizione
-SET clima = 'tropical'
-WHERE codice = 'LXqz5';
+-- UPDATE Posizione
+-- SET clima = 'tropical'
+-- WHERE codice = 'xeen9';
 -- Rimane uguale.
 ------------------------------------------------------------------------------------------
 
@@ -285,12 +285,11 @@ FOR EACH ROW
 EXECUTE PROCEDURE check_inserimento_pianta();
 
 -- TEST 1
-SELECT aggiungi_pianta('Pacific Bristlystalked Sedge', 'VsqbR');
+-- SELECT aggiungi_pianta('Zulu Fescue', 'F2AHZ');
 -- Expected output:
--- NOTICE:  La pianta di genere Pacific Bristlystalked Sedge non può stare nella posizione
--- VsqbR.
+-- NOTICE:  La pianta di genere Zulu Fescue non può stare nella posizione F2AHZ.
 -- TEST 2
-SELECT aggiungi_pianta('Pacific Bristlystalked Sedge', 'XV4kn');
+-- SELECT aggiungi_pianta('Zulu Fescue', 'Fegeg');
 -- Expected output:
 -- Pianta aggiunta.
 ------------------------------------------------------------------------------------------
