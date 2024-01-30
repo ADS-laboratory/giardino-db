@@ -112,7 +112,7 @@ $$;
 -- Operazione 5
 -- Trovare il Genere di Piante che può stare in meno Posizioni
 
-CREATE OR REPLACE FUNCTION genera_meno_posizione()
+CREATE OR REPLACE FUNCTION genere_puo_stare_in_meno_posizioni()
 RETURNS TABLE (generi varchar(50)) LANGUAGE plpgsql AS
 $$
     BEGIN
@@ -197,11 +197,11 @@ $$
         WHERE codice IN (
             SELECT Numero_Piante_X.posizione_pianta
             FROM piante_posizione(genere_x) AS Numero_Piante_X
-            WHERE Numero_Piante_X.Numero_Piante >= 5
+            WHERE Numero_Piante_X.Numero_Piante >= 10
             INTERSECT
             SELECT Numero_Piante_Y.posizione_pianta
             FROM piante_posizione(genere_y) AS Numero_Piante_Y
-            WHERE Numero_Piante_Y.Numero_Piante >= 10
+            WHERE Numero_Piante_Y.Numero_Piante >= 15
         );
     END;
 $$;
@@ -211,6 +211,9 @@ $$;
 -- Data una pianta trovare la posizione (o le posizioni se più di una) meno affollata in
 -- cui può essere spostata.
 -- TODO: funziona?
+
+-- Trovo la posizione (o le posizioni) meno affollata tra quelle trovate con la
+-- funzione di supporto trova_posizioni_candidate.
 CREATE OR REPLACE FUNCTION trova_posizioni_alternative(
     genere_pianta varchar(50),
     numero_pianta integer
@@ -219,9 +222,7 @@ RETURNS TABLE (codice char(5)) LANGUAGE plpgsql AS
 $$
     BEGIN
         RETURN QUERY
-        -- Trovo la posizione (o le posizioni) meno affollata tra quelle trovate con la
-        -- funzione di supporto trova_posizioni_candidate.
-        SELECT Candidati.posizione
+        SELECT Candidati.Posizione
         FROM trova_posizioni_candidate(genere_pianta, numero_pianta) AS Candidati
         WHERE numero_piante = (
             SELECT MIN(numero_piante)
@@ -229,6 +230,9 @@ $$
         );
     END;
 $$;
+
+
+
 
 CREATE OR REPLACE FUNCTION trova_posizioni_candidate(
     genere_pianta varchar(50),
