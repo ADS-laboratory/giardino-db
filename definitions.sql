@@ -107,8 +107,7 @@ CREATE TABLE Lavora (
         ON UPDATE CASCADE
 );
 
--- TODO: check for non overlapping time intervals
--- TODO: ora_inizio < ora_fine
+-- check for non overlapping time intervals
 
 CREATE TABLE GP (
     genere varchar(50) REFERENCES Genere
@@ -173,12 +172,77 @@ EXECUTE PROCEDURE check_sensibile_al_clima();
 -- Aggiornamento dell'attributo max_id di Genere, 
 -- controllato nell'operazione di aggiunta, spiegare perché nel file
 
+
+-- MODIFICA CLIMA DI UNA POSIZIONE
+
 -- Aggiornamento della relazione GP
+-- Eseguita quando modifico il clima di una posizione
+
+CREATE OR REPLACE FUNCTION aggiorna_gp()
+RETURNS TRIGGER LANGUAGE plpgsql AS
+$$
+    BEGIN
+        --rimuovo tutti i generi in una posizione
+        DELETE FROM GP
+        WHERE NEW.codice = posizione;
+
+        --reinserisco i dati aggiornando rispertto alle famiglie
+        INSERT INTO GP
+        SELECT nome, NEW.codice
+        FROM Genere
+        WHERE famiglia IN (SELECT sensibile_al_climam FROM PuoStare WHERE clima = NEW.clima)
+            OR famiglia NOT IN (SELECT sensibile_al_clima);
+        RETURN NEW;
+    END;
+$$;
+
+CREATE OR REPLACE TRIGGER aggiorna_gp
+AFTER UPDATE ON Posizione
+FOR EACH ROW
+EXECUTE PROCEDURE aggiorna_gp();
+
+---- verificare funzionamento
 
 -- Sensibile al clima only append
 -- PuoStare  only append
 
--- modifica clima
+--Verifica che non ci siano piante che non possono stare nel nuovo clima
+
+CREATE OR REPLACE FUNCTION check_piante_posizione()
+RETURNS TRIGGER LANGUAGE plpgsql AS
+$$
+    DECLARE
+        famiglia_corrente varchar(50);
+    BEGIN
+-- se il genere non può stare nel clima raise notice
+    BEGIN
+        FOR pianta IN SELECT *
+            FROM Pianta 
+            WHERE p.posizione = OLD.codice
+        LOOP
+            SELECT famiglia INTO famiglia_ccorrente
+            FROM Genere
+            WHERE pianta.genere = nome;
+
+            IF NOT EXISTS (SELECT *
+                FROM PuoStare
+                WHERE sensibile_al_clima = famiglia_corrente AND clima = NEW.clima) THEN
+                RAISE NOTICE 'Il genere % non può stare nel clima %', pianta.genere, NEW.clima;
+                RETURN NULL;
+            END IF;
+        END LOOP;
+        RETURN NEW;
+    END;
+$$;
+
+CREATE OR REPLACE TRIGGER check_piante_posizione
+BEFORE UPDATE ON Posizione
+FOR EACH ROW
+EXECUTE PROCEDURE check_piante_posizione();
+
+---- verificare funzionamento
+
+
 -- aggiunta pianta
 
 -- Controllo vincolo principale
