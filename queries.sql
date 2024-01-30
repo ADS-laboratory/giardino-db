@@ -51,7 +51,6 @@ $$;
 
 -- Operazione 3
 -- Modifica del Clima di una certa Posizione
-
 CREATE OR REPLACE FUNCTION modifica_clima(
     codice_posizione char(5),
     nuovo_clima varchar(50)
@@ -64,6 +63,7 @@ $$
         SET clima = nuovo_clima
         WHERE codice = codice_posizione;
         RETURN;
+        -- L'aggiornamento della relazione GP è gestito dal trigger aggiorna_gp().
     END;
 $$;
 

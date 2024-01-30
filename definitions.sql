@@ -172,63 +172,38 @@ EXECUTE PROCEDURE check_sensibile_al_clima();
 -- Aggiornamento dell'attributo max_id di Genere, 
 -- controllato nell'operazione di aggiunta, spiegare perché nel file
 
-
--- MODIFICA CLIMA DI UNA POSIZIONE
-
--- Aggiornamento della relazione GP
--- Eseguita quando modifico il clima di una posizione
-
-CREATE OR REPLACE FUNCTION aggiorna_gp()
-RETURNS TRIGGER LANGUAGE plpgsql AS
-$$
-    BEGIN
-        --rimuovo tutti i generi in una posizione
-        DELETE FROM GP
-        WHERE NEW.codice = posizione;
-
-        --reinserisco i dati aggiornando rispertto alle famiglie
-        INSERT INTO GP
-        SELECT nome, NEW.codice
-        FROM Genere
-        WHERE famiglia IN (SELECT sensibile_al_climam FROM PuoStare WHERE clima = NEW.clima)
-            OR famiglia NOT IN (SELECT sensibile_al_clima);
-        RETURN NEW;
-    END;
-$$;
-
-CREATE OR REPLACE TRIGGER aggiorna_gp
-AFTER UPDATE ON Posizione
-FOR EACH ROW
-EXECUTE PROCEDURE aggiorna_gp();
-
 ---- verificare funzionamento
 
 -- Sensibile al clima only append
 -- PuoStare  only append
 
---Verifica che non ci siano piante che non possono stare nel nuovo clima
-
+------------------------------------------------------------------------------------------
+-- CHECK PIANTE POSIZIONE
+-- Prima dell'operazione di MODIFICA DEL CLIMA, verifica che non ci siano piante che non
+-- possono stare nel nuovo clima.
 CREATE OR REPLACE FUNCTION check_piante_posizione()
 RETURNS TRIGGER LANGUAGE plpgsql AS
 $$
     DECLARE
-        famiglia_corrente varchar(50);
+        famiglia varchar(50);
     BEGIN
--- se il genere non può stare nel clima raise notice
-    BEGIN
-        FOR pianta IN SELECT *
-            FROM Pianta 
-            WHERE p.posizione = OLD.codice
+        FOR famiglia IN SELECT DISTINCT Genere.famiglia
+            -- Selezione di tutte le famiglie delle piante che sono nella posizione che
+            -- sto modificando.
+            FROM Pianta JOIN Genere ON Pianta.genere = Genere.nome
+            WHERE Pianta.posizione = OLD.codice
         LOOP
-            SELECT famiglia INTO famiglia_ccorrente
-            FROM Genere
-            WHERE pianta.genere = nome;
-
-            IF NOT EXISTS (SELECT *
-                FROM PuoStare
-                WHERE sensibile_al_clima = famiglia_corrente AND clima = NEW.clima) THEN
-                RAISE NOTICE 'Il genere % non può stare nel clima %', pianta.genere, NEW.clima;
-                RETURN NULL;
+            -- Per ognuna di queste famiglie controllo che possa stare nel clima.
+            IF famiglia IN (SELECT * FROM SensibileAlClima) THEN
+                -- Se la famiglia è sensibile al clima controllo che possa stare nel clima.
+                IF NOT EXISTS (SELECT *
+                    FROM PuoStare
+                    WHERE sensibile_al_clima = famiglia AND clima = NEW.clima) THEN
+                    -- Se la famiglia è sensibile al clima ma non è in relazione con i
+                    -- nuovo clima ritorno un errore e annullo l'operazione.
+                    RAISE NOTICE 'La famiglia % non può stare nel clima %', famiglia, NEW.clima;
+                    RETURN NULL;
+                END IF;
             END IF;
         END LOOP;
         RETURN NEW;
@@ -240,9 +215,82 @@ BEFORE UPDATE ON Posizione
 FOR EACH ROW
 EXECUTE PROCEDURE check_piante_posizione();
 
----- verificare funzionamento
+-- TEST 1
+UPDATE Posizione
+SET clima = 'tropical'
+WHERE codice = 'VsqbR';
+-- Expected output:
+-- NOTICE:  La famiglia Cuscutaceae non può stare nel clima tropical
+-- Check correctness:
+-- SELECT * FROM PuoStare WHERE sensibile_al_clima = 'Cuscutaceae';
+------------------------------------------------------------------------------------------
 
+------------------------------------------------------------------------------------------
+-- AGGIORNA GP
+-- Dopo l'operazione di MODIFICA DEL CLIMA aggiorna la relazione GP di conseguenza.
+CREATE OR REPLACE FUNCTION aggiorna_gp()
+RETURNS TRIGGER LANGUAGE plpgsql AS
+$$
+    BEGIN
+        -- Rimuovo tutte le tuple di GP in cui la posizione è quella che sto modificando.
+        DELETE FROM GP
+        WHERE OLD.codice = posizione;
 
--- aggiunta pianta
+        -- Reiewnserisco i dati eliminati calcolandoli tenendo conto del nuovo clima.
+        INSERT INTO GP
+        SELECT nome, NEW.codice
+        FROM Genere
+        WHERE famiglia IN (SELECT sensibile_al_clima FROM PuoStare WHERE clima = NEW.clima)
+            OR famiglia NOT IN (SELECT * FROM SensibileAlClima);
+        RETURN NULL;
+    END;
+$$;
 
--- Controllo vincolo principale
+CREATE OR REPLACE TRIGGER aggiorna_gp
+AFTER UPDATE ON Posizione
+FOR EACH ROW
+EXECUTE PROCEDURE aggiorna_gp();
+
+-- TEST 1
+UPDATE Posizione
+SET clima = 'tropical'
+WHERE codice = 'LXqz5';
+-- Rimane uguale.
+------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------
+-- CHECK INSERIMENTO PIANTA
+-- Prima dell'AGGIUNTA / MODIFICA DI UNA PIANTA controlla che possa essere inserita nella
+-- posizione desiderata.
+CREATE OR REPLACE FUNCTION check_inserimento_pianta()
+RETURNS TRIGGER LANGUAGE plpgsql AS
+$$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT *
+            FROM GP
+            WHERE genere = NEW.genere AND posizione = NEW.posizione
+        ) THEN
+        RAISE NOTICE 'La pianta di genere % non può stare nella posizione %.', NEW.genere, NEW.posizione;
+        RETURN NULL;
+        END IF;
+
+        RETURN NEW;
+    END;
+$$;
+
+CREATE OR REPLACE TRIGGER check_inserimento_pianta
+BEFORE INSERT OR UPDATE ON Pianta
+FOR EACH ROW
+EXECUTE PROCEDURE check_inserimento_pianta();
+
+-- TEST 1
+SELECT aggiungi_pianta('Pacific Bristlystalked Sedge', 'VsqbR');
+-- Expected output:
+-- NOTICE:  La pianta di genere Pacific Bristlystalked Sedge non può stare nella posizione
+-- VsqbR.
+-- TEST 2
+SELECT aggiungi_pianta('Pacific Bristlystalked Sedge', 'XV4kn');
+-- Expected output:
+-- Pianta aggiunta.
+------------------------------------------------------------------------------------------
