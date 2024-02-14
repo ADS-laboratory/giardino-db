@@ -42,7 +42,7 @@ CREATE TABLE PuoStare (
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     sensibile_al_clima varchar(50) REFERENCES SensibileAlClima
-        ON DELETE CASCADE -- Aggiungere trigger per controllare che ci siana almeno un elemento
+        ON DELETE CASCADE
         ON UPDATE CASCADE,
     PRIMARY KEY (clima, sensibile_al_clima)
 );
@@ -90,7 +90,7 @@ CREATE TABLE EResponsabile (
 CREATE TABLE Orario (
     giorno_della_settimana smallint,
     ora_inizio time,
-    ora_fine time,
+    ora_fine time CHECK (ora_inizio < ora_fine),
     PRIMARY KEY (giorno_della_settimana, ora_inizio, ora_fine)
 );
 
@@ -107,7 +107,7 @@ CREATE TABLE Lavora (
         ON UPDATE CASCADE
 );
 
--- check for non overlapping time intervals
+-- TODO: check for non overlapping time intervals
 
 CREATE TABLE GP (
     genere varchar(50) REFERENCES Genere
@@ -128,10 +128,12 @@ $$
     DECLARE
         count integer;
     BEGIN
+        -- Selezione del numero di orari di un giardiniere
         SELECT COUNT(*) INTO count
         FROM Lavora
         WHERE OLD.giardiniere = giardiniere;
         IF count <= 1 THEN
+            -- Se l'ultimo orario di un giardiniere viene eliminato, l'operazione viene annullata
             RAISE NOTICE 'Un giardiniere deve avere almeno un orario';
             RETURN NULL; -- annulla operazione
         END IF;
@@ -152,10 +154,12 @@ $$
     DECLARE
         count integer;
     BEGIN
+        -- Selezione del numero di climi a cui è sensibile una famiglia
         SELECT COUNT(*) INTO count
         FROM PuoStare
         WHERE OLD.sensibile_al_clima = sensibile_al_clima;
         IF count <= 1 THEN
+            -- Se l'ultimo clima a cui è sensibile una famiglia viene eliminato, l'operazione viene annullata
             RAISE NOTICE 'Una famiglia sensibile al clima deve avere almeno un clima a cui è sensibile';
             RETURN NULL; -- annulla operazione
         END IF;
@@ -172,7 +176,7 @@ EXECUTE PROCEDURE check_sensibile_al_clima();
 -- Aggiornamento dell'attributo max_id di Genere, 
 -- controllato nell'operazione di aggiunta, spiegare perché nel file
 
----- verificare funzionamento
+-- TODO: verificare funzionamento
 
 -- Sensibile al clima only append
 -- PuoStare  only append
@@ -236,11 +240,14 @@ $$
         DELETE FROM GP
         WHERE OLD.codice = posizione;
 
-        -- Reiewnserisco i dati eliminati calcolandoli tenendo conto del nuovo clima.
+        -- Inserisco tutte le tuple di GP in cui la posizione è quella modificata.
         INSERT INTO GP
         SELECT nome, NEW.codice
         FROM Genere
-        WHERE famiglia IN (SELECT sensibile_al_clima FROM PuoStare WHERE clima = NEW.clima)
+        WHERE 
+            -- famiglie sensibili al clima che possono stare nel clima della posizione
+            famiglia IN (SELECT sensibile_al_clima FROM PuoStare WHERE clima = NEW.clima)
+            -- famiglie non sensibili al clima
             OR famiglia NOT IN (SELECT * FROM SensibileAlClima);
         RETURN NULL;
     END;
@@ -266,13 +273,15 @@ CREATE OR REPLACE FUNCTION check_inserimento_pianta()
 RETURNS TRIGGER LANGUAGE plpgsql AS
 $$
     BEGIN
+        -- Viene utilizzata la relazione ridondante GP per controllare che la pianta
+        -- possa stare nella posizione desiderata.
         IF NOT EXISTS (
             SELECT *
             FROM GP
             WHERE genere = NEW.genere AND posizione = NEW.posizione
         ) THEN
-        RAISE NOTICE 'La pianta di genere % non può stare nella posizione %.', NEW.genere, NEW.posizione;
-        RETURN NULL;
+            RAISE NOTICE 'La pianta di genere % non può stare nella posizione %.', NEW.genere, NEW.posizione;
+            RETURN NULL;
         END IF;
 
         RETURN NEW;

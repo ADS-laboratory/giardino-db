@@ -69,8 +69,6 @@ $$
     END;
 $$;
 
--- Trigger o metto qui il controllo?
-
 
 -- Operazione 4
 -- Raggruppare le Piante di un certo Genere in numeri progressivi consecutivi
@@ -89,9 +87,14 @@ $$
     BEGIN
         numero_pianta := 0;
 
+        -- Per ogni genere
         FOR genere_corrente IN SELECT * FROM Genere LOOP
-
+            -- Per ogni pianta di quel genere
             FOR pianta_corrente IN SELECT * FROM Pianta WHERE genere = genere_corrente.nome ORDER BY numero LOOP
+                -- Aggiorno il numero progressivo della pianta
+
+                -- La query precedente è ordinata in base al numero progressivo precedente in quanto
+                -- diversamente potrebbero esserci chiavi duplicate.
                 numero_pianta := numero_pianta + 1;
                 UPDATE Pianta
                 SET numero = numero_pianta
@@ -99,10 +102,12 @@ $$
             END LOOP;
 
             max_id_corrente:= numero_pianta;
+            -- Aggiorno il numero progressivo massimo del genere
             UPDATE Genere
             SET max_id = max_id_corrente
             WHERE nome = genere_corrente.nome;
 
+            -- Resetto il numero progressivo
             numero_pianta := 0;
 
         END LOOP;
@@ -118,11 +123,13 @@ CREATE OR REPLACE FUNCTION genere_puo_stare_in_meno_posizioni()
 RETURNS TABLE (generi varchar(50)) LANGUAGE plpgsql AS
 $$
     BEGIN
+        -- Il numero di posizioni per ogni genere
         CREATE OR REPLACE VIEW Conta_Posizioni AS
         SELECT genere, COUNT(*) AS Numero_Posizioni
         FROM GP
         GROUP BY genere;
 
+        -- Viene selezionato il genere cnon il minor numero di posizioni
         RETURN QUERY
         SELECT genere
         FROM Conta_Posizioni
@@ -146,6 +153,7 @@ $$
                 JOIN EResponsabile ON EResponsabile.genere_pianta = Pianta.genere AND EResponsabile.numero_pianta = Pianta.numero
             GROUP BY Posizione;
 
+        -- Viene selezionata la posizione con il minor numero di giardinieri
         RETURN QUERY
         SELECT Giardinieri_Per_Posizione.posizione
         FROM Giardinieri_Per_Posizione
@@ -172,6 +180,7 @@ $$
     END;
 $$;
 
+-- TODO: test the function with a different seed and then delete this
 SELECT *
 FROM Lavora
 WHERE giardiniere NOT IN (SELECT DISTINCT Giardiniere
@@ -198,8 +207,6 @@ $$
     END;
 $$;
 
--- restituisce una tabella con due colonne: clima e codice della posizione
--- utilizza la funzione ausiliare piante_posizione
 CREATE OR REPLACE FUNCTION clima_delle_posizioni(
     genere_x varchar(50),
     genere_y varchar(50)
@@ -207,8 +214,9 @@ CREATE OR REPLACE FUNCTION clima_delle_posizioni(
 RETURNS TABLE (clima_posizione varchar(50), codice_posizione char(5)) LANGUAGE plpgsql AS
 $$
     BEGIN
+        -- Il risultato è l'intersezione tra le posizioni in cui si trovano almeno 10 piante del 
+        -- genere x e almeno 20 del genere y
         RETURN QUERY
-
         SELECT Clima, codice
         FROM Posizione
         WHERE codice IN (
