@@ -173,14 +173,6 @@ BEFORE DELETE ON PuoStare
 FOR EACH ROW
 EXECUTE PROCEDURE check_sensibile_al_clima();
 
--- Aggiornamento dell'attributo max_id di Genere, 
--- controllato nell'operazione di aggiunta, spiegare perché nel file
-
--- TODO: verificare funzionamento
-
--- Sensibile al clima only append
--- PuoStare  only append
-
 ------------------------------------------------------------------------------------------
 -- CHECK PIANTE POSIZIONE
 -- Prima dell'operazione di MODIFICA DEL CLIMA, verifica che non ci siano piante che non
