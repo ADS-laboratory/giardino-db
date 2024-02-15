@@ -173,6 +173,16 @@ BEFORE DELETE ON PuoStare
 FOR EACH ROW
 EXECUTE PROCEDURE check_sensibile_al_clima();
 
+SELECT numero_ore.giardiniere, ore_totali, count 
+FROM
+    (SELECT giardiniere, SUM(ora_fine - ora_inizio) AS ore_totali
+    FROM Lavora
+    GROUP BY giardiniere) AS numero_ore JOIN
+    (SELECT giardiniere, count(*)
+    FROM EResponsabile
+    GROUP BY giardiniere) AS numero_piante 
+    ON numero_ore.giardiniere = numero_piante.giardiniere;
+
 ------------------------------------------------------------------------------------------
 -- CHECK PIANTE POSIZIONE
 -- Prima dell'operazione di MODIFICA DEL CLIMA, verifica che non ci siano piante che non

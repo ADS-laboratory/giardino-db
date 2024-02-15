@@ -25,7 +25,7 @@ for (i in 1:length(ore))
 {
     for (j in 1:num_giorni_settimana)
     {
-        # get the number of hours worked in the current hour
+        # trova il numero di ore lavorate nell'ora corrente
         rows <- lavora[lavora$ora_fine > ore[i] & lavora$ora_inizio <= ore[i] & lavora$giorno_della_settimana == j,]
         ore_lavoro <- sum(pmin(rows$ora_fine, ore[i] + 1) - pmax(rows$ora_inizio, ore[i]))
         lavoro_settimanale <- rbind(lavoro_settimanale, data.frame(ora = ore[i], giorno_della_settimana = j, ore_lavoro = ore_lavoro))
@@ -41,7 +41,7 @@ png(file="plots_results/box1.png")
 stripchart(ore_lavoro ~ ora, data=lavoro_settimanale, vertical=T, method="jitter", xlab="Ora del giorno", ylab="Ore cumulative", main="Ore cumulative di lavoro per giorno della settimana")
 dev.off()
 
-# create matrix from dataframe x: ora, y: giorno della settimana, value: ore di lavoro
+# Crea la matrice dal dataframe x: ora, y: giorno della settimana, value: ore di lavoro
 mat <- matrix(lavoro_settimanale$ore_lavoro, nrow=length(unique(lavoro_settimanale$giorno_della_settimana)), ncol=length(unique(lavoro_settimanale$ora)))
 
 png(file="plots_results/heatmap1.png")
@@ -50,6 +50,7 @@ dev.off()
 
 # Strip chart, x: famiglie, y: numero giardinieri per genere
 
+# Query, ritorna il numero di giardinieri che sono responsabili di piante con un certo genere
 num_giardinieri <- dbGetQuery(con, 
 "SELECT famiglia, genere, count
 FROM genere JOIN
@@ -61,5 +62,34 @@ FROM genere JOIN
 png(file="plots_results/box2.png", width=800, height=600)
 par( mar=c(10, 5, 4, 3))
 boxplot(count ~ famiglia, data=num_giardinieri, xlab = "", ylab="Giardinieri per genere", main="Numerero di giardinieri per genere", las=2)
+dev.off()
+
+# Scatter plot, x: numero piante di cui è responsabile un giardiniere, y: le ore di lavore del giardiniere
+
+# Funzione per convertire hh:mm:ss in decimali
+hhmmss2dec <- function(x) {
+  xlist <- unlist(strsplit(x,split=":"))
+  h <- as.numeric(xlist[1])
+  m <- as.numeric(xlist[2])
+  s <- as.numeric(xlist[3])
+  xdec <- h+(m/60)+(s/60/60)
+  return(xdec)
+}
+
+# Query, ritorna i giardinieri con il numero di ore di lavoro e il numero di piante di cui sono responsabili
+giardinieri1 <- dbGetQuery(con, 
+"SELECT numero_ore.giardiniere, ore_totali, numero_piante 
+FROM
+    (SELECT giardiniere, SUM(ora_fine - ora_inizio) AS ore_totali
+    FROM Lavora
+    GROUP BY giardiniere) AS numero_ore JOIN
+    (SELECT giardiniere, count(*) as numero_piante
+    FROM EResponsabile
+    GROUP BY giardiniere) AS numero_piante 
+    ON numero_ore.giardiniere = numero_piante.giardiniere;")
+
+giardinieri1$ore_totali <- lapply(giardinieri1$ore_totali, hhmmss2dec)
+png(file="plots_results/scatterplot1.png", width=800, height=600)
+plot(giardinieri1$numero_piante, giardinieri1$ore_totali, xlab="Numero di piante", ylab="Ore di lavoro per pianta", main="Ore di lavoro per pianta per giardiniere", las=2)
 dev.off()
 
