@@ -91,6 +91,7 @@ FROM
     ON numero_ore.giardiniere = numero_piante.giardiniere;")
 # Conversione delle ore di lavoro da stringa hh:mm:ss a decimali.
 lavoro_giardinieri$ore_totali <- lapply(lavoro_giardinieri$ore_totali, hhmmss2dec)
+lavoro_giardinieri$ore_totali <- as.numeric(lavoro_giardinieri$ore_totali)
 # Scatter plot.
 png(file="plots_results/scatterplot1.png", width=800, height=600)
 plot(
@@ -100,5 +101,12 @@ plot(
     ylab="Ore di lavoro per settimana",
     main="Efficienza dei giardinieri",
     las=2)
+# Aggiungi la retta di regressione.
+# TODO: forse la retta di regressione è inutile?
+#abline(lm(ore_totali ~ numero_piante, data = lavoro_giardinieri), col = 'red')
+# Aggiungo la retta dell' efficienza richiesta: si assuma che un giardiniere venga
+# considerato efficiente se in 1 ora di lavoro si occupa di almeno 30 piante (assumiamo
+# per semplicità che ogni pianta richieda le stesse "cure" ogni settimana).
+abline(a = 1, b = 1/30, col = 'blue')
 dev.off()
 
