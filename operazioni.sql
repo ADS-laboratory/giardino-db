@@ -164,22 +164,20 @@ $$;
 
 
 -- Operazione 7
--- Trovare il numero di Generi delle Piante il cui Giardiniere responsabile lavora almeno
--- dalle 10:00 alle 16:00 tutti i giorni in cui lavora.
+-- Trovare il numero di Generi per cui esiste almeno una Pianta il cui Giardiniere
+-- responsabile lavora almeno dalle 10:00 alle 16:00 tutti i giorni in cui lavora.
 CREATE OR REPLACE FUNCTION numero_generi_giardiniere()
 RETURNS TABLE (numero_generi bigint) LANGUAGE plpgsql AS
 $$
     BEGIN
         RETURN QUERY
-        SELECT Count(DISTINCT Genere)
-        FROM Pianta
-        WHERE (Genere, Numero) NOT IN (
-            SELECT DISTINCT Pianta.Genere, Pianta.Numero
+        SELECT Count(DISTINCT Genere_Pianta)
+        FROM EResponsabile AS ER1
+        WHERE (Genere_Pianta, Numero_Pianta) NOT IN (
+            SELECT DISTINCT ER2.Genere_Pianta, ER2.Numero_Pianta
             -- Con il left join manteniamo anche le piante che non hanno un responsabile
-            FROM Pianta
-                LEFT JOIN EResponsabile ON EResponsabile.Numero_Pianta = Pianta.Numero AND EResponsabile.Genere_Pianta = Pianta.Genere
-                LEFT JOIN Lavora ON Lavora.Giardiniere = EResponsabile.Giardiniere
-            WHERE Lavora.Ora_inizio > '10:00:00' OR Lavora.Ora_fine < '16:00:00' OR EResponsabile.Giardiniere IS NULL
+            FROM EResponsabile AS ER2 JOIN Lavora ON Lavora.Giardiniere = ER2.Giardiniere
+            WHERE Lavora.Ora_inizio > '10:00:00' OR Lavora.Ora_fine < '16:00:00'
         );
     END;
 $$;
