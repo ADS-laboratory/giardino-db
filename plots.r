@@ -76,8 +76,10 @@ hhmmss2dec <- function(x) {
   return(xdec)
 }
 
-# Query, ritorna i giardinieri con il numero di ore di lavoro e il numero di piante di cui sono responsabili
-giardinieri1 <- dbGetQuery(con, 
+# Query, ritorna i giardinieri con i rispettivi:
+# - numero di ore di lavoro per settimana;
+# - numero di piante di cui è responsabile.
+lavoro_giardinieri <- dbGetQuery(con, 
 "SELECT numero_ore.giardiniere, ore_totali, numero_piante 
 FROM
     (SELECT giardiniere, SUM(ora_fine - ora_inizio) AS ore_totali
@@ -87,9 +89,16 @@ FROM
     FROM EResponsabile
     GROUP BY giardiniere) AS numero_piante 
     ON numero_ore.giardiniere = numero_piante.giardiniere;")
-
-giardinieri1$ore_totali <- lapply(giardinieri1$ore_totali, hhmmss2dec)
+# Conversione delle ore di lavoro da stringa hh:mm:ss a decimali.
+lavoro_giardinieri$ore_totali <- lapply(lavoro_giardinieri$ore_totali, hhmmss2dec)
+# Scatter plot.
 png(file="plots_results/scatterplot1.png", width=800, height=600)
-plot(giardinieri1$numero_piante, giardinieri1$ore_totali, xlab="Numero di piante", ylab="Ore di lavoro per pianta", main="Ore di lavoro per pianta per giardiniere", las=2)
+plot(
+    lavoro_giardinieri$numero_piante,
+    lavoro_giardinieri$ore_totali,
+    xlab="Numero di piante di cui è responsabile",
+    ylab="Ore di lavoro per settimana",
+    main="Efficienza dei giardinieri",
+    las=2)
 dev.off()
 
