@@ -186,7 +186,7 @@ $$;
 
 
 -- Operazione 8
--- Il Clima delle Posizioni in cui si trovano almeno 10 Piante del Genere x e almeno 20 del Genere y
+-- Il Clima delle Posizioni in cui si trovano almeno 10 Piante del Genere x e almeno 15 del Genere y
 
 -- restituisce una tabella con due colonne: posizione e numero di piante in quella posizione
 CREATE OR REPLACE FUNCTION piante_posizione(
@@ -212,7 +212,7 @@ RETURNS TABLE (clima_posizione varchar(50), codice_posizione char(5)) LANGUAGE p
 $$
     BEGIN
         -- Il risultato è l'intersezione tra le posizioni in cui si trovano almeno 10 piante del 
-        -- genere x e almeno 20 del genere y
+        -- genere x e almeno 15 del genere y
         RETURN QUERY
         SELECT Clima, codice
         FROM Posizione
