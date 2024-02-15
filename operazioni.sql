@@ -165,27 +165,24 @@ $$;
 
 -- Operazione 7
 -- Trovare il numero di Generi delle Piante il cui Giardiniere responsabile lavora almeno
--- dalle 8:00 alle 17:00 tutti i giorni in cui lavora.
+-- dalle 10:00 alle 16:00 tutti i giorni in cui lavora.
 CREATE OR REPLACE FUNCTION numero_generi_giardiniere()
-RETURNS bigint LANGUAGE plpgsql AS
+RETURNS TABLE (numero_generi bigint) LANGUAGE plpgsql AS
 $$
     BEGIN
-        SELECT Count(DISTINCT Genere)--, Numero--giardiniere
-        FROM Pianta-- join EResponsabile on Pianta.Numero = EResponsabile.Numero_Pianta AND Pianta.Genere = EResponsabile.Genere_Pianta
-        WHERE (Genere, Numero) NOT IN (SELECT DISTINCT Pianta.Genere, Pianta.Numero
+        RETURN QUERY
+        SELECT Count(DISTINCT Genere)
+        FROM Pianta
+        WHERE (Genere, Numero) NOT IN (
+            SELECT DISTINCT Pianta.Genere, Pianta.Numero
+            -- Con il left join manteniamo anche le piante che non hanno un responsabile
             FROM Pianta
                 LEFT JOIN EResponsabile ON EResponsabile.Numero_Pianta = Pianta.Numero AND EResponsabile.Genere_Pianta = Pianta.Genere
                 LEFT JOIN Lavora ON Lavora.Giardiniere = EResponsabile.Giardiniere
-            WHERE Lavora.Ora_inizio > '12:00:00' OR Lavora.Ora_fine < '14:00:00' OR EResponsabile.Giardiniere IS NULL);
+            WHERE Lavora.Ora_inizio > '10:00:00' OR Lavora.Ora_fine < '16:00:00' OR EResponsabile.Giardiniere IS NULL
+        );
     END;
 $$;
-
--- TODO: test the function with a different seed and then delete this
-SELECT *
-FROM Lavora
-WHERE giardiniere NOT IN (SELECT DISTINCT Giardiniere
-    FROM Lavora
-    WHERE Lavora.Ora_inizio > '15:00:00' OR Lavora.Ora_fine < '17:00:00');
 
 
 -- Operazione 8

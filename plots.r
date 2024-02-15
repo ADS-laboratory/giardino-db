@@ -1,5 +1,5 @@
 # Set the seed
-set.seed(1234)
+set.seed(4321234)
 
 # Connessione al database
 
@@ -38,7 +38,7 @@ for (i in 1:length(ore))
 
 # Plot
 png(file="plots_results/box1.png")
-stripchart(ore_lavoro ~ ora, data=lavoro_settimanale, vertical=T, method="jitter", xlab="Ora del giorno", ylab="Ore cumulative", main="Ore cumulative di lavoro per giorno della settimana", range="0")
+stripchart(ore_lavoro ~ ora, data=lavoro_settimanale, vertical=T, method="jitter", xlab="Ora del giorno", ylab="Ore cumulative", main="Ore cumulative di lavoro per giorno della settimana")
 dev.off()
 
 # create matrix from dataframe x: ora, y: giorno della settimana, value: ore di lavoro
