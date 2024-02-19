@@ -1,6 +1,6 @@
 SET search_path TO Giardino;
 
--- Operazione 1
+-- OPERAZIONE 1
 -- Aggiunta di una nuova PIANTA di un certo GENERE
 CREATE OR REPLACE FUNCTION aggiungi_pianta(
     genere_pianta varchar(50),
@@ -20,13 +20,11 @@ $$
         numero_pianta := numero_pianta + 1;
 
         -- Inserimento della pianta
-        -- Se non esiste la posizione_pianta l'eccezione non è gestita
         INSERT INTO Pianta VALUES (numero_pianta, genere_pianta, posizione_pianta);
 
         -- Aggiornamento del numero progressivo del genere
-        -- Quest'operazione non è delegata ad un trigger perchè dovremmo calcolarci ogni
-        -- volta il max (e non converrebbe più avere l'attributo derivato) oppure dovremmo
-        -- fare solo +1 fidandoci che l'inserimento sia stato fatto con questa operazione
+        -- Quest'operazione non è delegata ad un trigger perché dovremmo calcolare ogni
+        -- volta il max (ciò renderebbe inefficiente il sistema)
         UPDATE Genere
         SET max_id = numero_pianta
         WHERE nome = genere_pianta;
@@ -34,7 +32,9 @@ $$
     END;
 $$;
 
--- Operazione 2
+
+------------------------------------------------------------------------------------------
+-- OPERAZIONE 2
 -- Rimozione di una PIANTA
 CREATE OR REPLACE FUNCTION rimuovi_pianta(
     genere_pianta varchar(50),
@@ -43,7 +43,6 @@ CREATE OR REPLACE FUNCTION rimuovi_pianta(
 RETURNS void LANGUAGE plpgsql AS
 $$
     BEGIN
-        -- Rimozione della pianta
         DELETE FROM Pianta
         WHERE genere = genere_pianta AND numero = numero_pianta;
         RETURN;
@@ -51,7 +50,8 @@ $$
 $$;
 
 
--- Operazione 3
+------------------------------------------------------------------------------------------
+-- OPERAZIONE 3
 -- Modifica del Clima di una certa Posizione
 CREATE OR REPLACE FUNCTION modifica_clima(
     codice_posizione char(5),
@@ -65,16 +65,16 @@ $$
         SET clima = nuovo_clima
         WHERE codice = codice_posizione;
         RETURN;
-        -- L'aggiornamento della relazione GP è gestito dal trigger aggiorna_gp().
+        -- L'aggiornamento della relazione GP è gestito dal trigger aggiorna_gp
     END;
 $$;
 
 
--- Operazione 4
--- Raggruppare le Piante di un certo Genere in numeri progressivi consecutivi
--- Operazione di Batch
--- non è un trigger perché non è un'operazione che si fa ad ogni inserimento
--- è un'operazione che si fa una volta ogni tanto
+------------------------------------------------------------------------------------------
+-- OPERAZIONE 4
+-- Raggruppa le Piante di un certo Genere in numeri progressivi consecutivi
+-- e aggiorna il numero progressivo massimo del Genere
+-- Operazione eseguita saltuariamente per mantenere l'ordine dei numeri progressivi
 
 CREATE OR REPLACE FUNCTION aggiorna_numeri_piante()
 RETURNS void LANGUAGE plpgsql AS
@@ -116,20 +116,21 @@ $$
 $$;
 
 
--- Operazione 5
+------------------------------------------------------------------------------------------
+-- OPERAZIONE 5
 -- Trovare il Genere di Piante che può stare in meno Posizioni
 
 CREATE OR REPLACE FUNCTION genere_puo_stare_in_meno_posizioni()
 RETURNS TABLE (generi varchar(50)) LANGUAGE plpgsql AS
 $$
     BEGIN
-        -- Il numero di posizioni per ogni genere
+        -- Il numero di posizioni possibili per ogni genere
         CREATE OR REPLACE VIEW Conta_Posizioni AS
         SELECT genere, COUNT(*) AS Numero_Posizioni
         FROM GP
         GROUP BY genere;
 
-        -- Viene selezionato il genere cnon il minor numero di posizioni
+        -- Viene selezionato il genere cnon il minor numero di posizioni associabili
         RETURN QUERY
         SELECT genere
         FROM Conta_Posizioni
@@ -138,7 +139,8 @@ $$
 $$;
 
 
--- Operazione 6
+------------------------------------------------------------------------------------------
+-- OPERAZIONE 6
 -- Trovare la Posizione coperta da meno Giardinieri
 
 CREATE OR REPLACE FUNCTION posizioni_con_meno_giardinieri()
@@ -163,7 +165,8 @@ $$
 $$;
 
 
--- Operazione 7
+------------------------------------------------------------------------------------------
+-- OPERAZIONE 7
 -- Trovare il numero di Generi per cui esiste almeno una Pianta il cui Giardiniere
 -- responsabile lavora almeno dalle 10:00 alle 16:00 tutti i giorni in cui lavora.
 CREATE OR REPLACE FUNCTION numero_generi_giardiniere()
@@ -173,20 +176,23 @@ $$
         RETURN QUERY
         SELECT Count(DISTINCT Genere_Pianta)
         FROM EResponsabile AS ER1
+        -- Per ogni pianta controlla se il giardiniere responsabile lavora dalle 10:00 alle 16:00
+        -- tutti i giorni in cui lavora
+        -- Se così considero il genere della pianta nell'operazione count
         WHERE (Genere_Pianta, Numero_Pianta) NOT IN (
             SELECT DISTINCT ER2.Genere_Pianta, ER2.Numero_Pianta
-            -- Con il left join manteniamo anche le piante che non hanno un responsabile
             FROM EResponsabile AS ER2 JOIN Lavora ON Lavora.Giardiniere = ER2.Giardiniere
             WHERE Lavora.Ora_inizio > '10:00:00' OR Lavora.Ora_fine < '16:00:00'
         );
     END;
 $$;
 
-
--- Operazione 8
+------------------------------------------------------------------------------------------
+-- OPERAZIONE 8
 -- Il Clima delle Posizioni in cui si trovano almeno 10 Piante del Genere x e almeno 15 del Genere y
 
--- restituisce una tabella con due colonne: posizione e numero di piante in quella posizione
+-- Funzione di supporto che, dato un genere, restituisce una tabella con due colonne:
+-- posizione e numero di piante in quella posizione
 CREATE OR REPLACE FUNCTION piante_posizione(
     genere_ricercato varchar(50)
 )
@@ -202,6 +208,9 @@ $$
     END;
 $$;
 
+-- Funzione che implementa l'operazione richiesta
+-- Restituisce la coppia (clima, codice_posizione) per ogni posizione in cui si trovano almeno 10 piante
+-- del genere x e almeno 15 del genere y
 CREATE OR REPLACE FUNCTION clima_delle_posizioni(
     genere_x varchar(50),
     genere_y varchar(50)
@@ -231,7 +240,43 @@ $$;
 -- Data una pianta trovare la posizione (o le posizioni se più di una) meno affollata in
 -- cui può essere spostata.
 
--- Trovo la posizione (o le posizioni) meno affollata tra quelle trovate con la funzione
+
+-- Funzione di supporto che per ogni posizione in cui può stare una pianta restituisce una tabella con due colonne:
+-- codice della posizione e numero di piante in quella posizione
+
+CREATE OR REPLACE FUNCTION trova_posizioni_candidate(
+    genere_pianta varchar(50),
+    numero_pianta integer
+)
+RETURNS TABLE (posizione char(5), numero_piante bigint) LANGUAGE plpgsql AS
+$$
+    DECLARE
+        posizione_corrente char(5);
+    BEGIN
+        -- La posizione corrente in cui si trova la pianta.
+        SELECT Pianta.posizione INTO posizione_corrente
+        FROM Pianta
+        WHERE genere = genere_pianta AND numero = numero_pianta;
+
+        RETURN QUERY
+        -- Le posizioni in cui può stare la pianta. Per ogni posizione il
+        -- numero di piante.
+        SELECT Pianta.posizione, COUNT(*) AS numero_piante
+        FROM Pianta
+        WHERE Pianta.posizione IN (
+            SELECT GP.posizione
+            FROM GP
+            WHERE genere = genere_pianta
+        )
+        -- Escludo la posizione corrente.
+        AND Pianta.posizione <> posizione_corrente
+        GROUP BY Pianta.posizione;
+    END;
+$$;
+
+
+-- Funzione che implementa l'operazione richiesta
+-- Restituisce la posizione (o le posizioni) meno affollata tra quelle trovate con la funzione
 -- di supporto trova_posizioni_candidate.
 CREATE OR REPLACE FUNCTION trova_posizioni_alternative(
     genere_pianta varchar(50),
@@ -249,48 +294,3 @@ $$
         );
     END;
 $$;
-
--- Trovo tutte le posizioni alternative in cui può stare la pianta.
-CREATE OR REPLACE FUNCTION trova_posizioni_candidate(
-    genere_pianta varchar(50),
-    numero_pianta integer
-)
-RETURNS TABLE (posizione char(5), numero_piante bigint) LANGUAGE plpgsql AS
-$$
-    DECLARE
-        posizione_corrente char(5);
-    BEGIN
-        -- Trovo la posizione corrente in cui si trova la pianta.
-        SELECT Pianta.posizione INTO posizione_corrente
-        FROM Pianta
-        WHERE genere = genere_pianta AND numero = numero_pianta;
-
-        RETURN QUERY
-        -- Trovo le posizioni in cui può stare la pianta. Per ogni posizione trovo il
-        -- numero di piante.
-        SELECT Pianta.posizione, COUNT(*) AS numero_piante
-        FROM Pianta
-        WHERE Pianta.posizione IN (
-            SELECT GP.posizione
-            FROM GP
-            WHERE genere = genere_pianta
-        )
-        -- Escludo la posizione corrente.
-        AND Pianta.posizione <> posizione_corrente
-        GROUP BY Pianta.posizione;
-    END;
-$$;
-
--- TEST 1
--- SELECT trova_posizioni_alternative('Zulu Fescue', 4);
--- Expected output:
--- xeen9
--- Infatti SELECT Count(*) FROM Pianta WHERE Posizione='xeen9'; = 2670
--- (perchè Zulu Fescue 4 si trova già in 1D7hg)
-
--- TEST 2
--- SELECT trova_posizioni_alternative('Zulu Fescue', 1);
--- Expected output:
--- 1D7hg
--- Infatti SELECT Count(*) FROM Pianta WHERE Posizione='1D7hg'; = 2454
-------------------------------------------------------------------------------------------
