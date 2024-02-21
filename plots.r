@@ -110,12 +110,22 @@ abline(reg, col = 'red')
 # Aggiungo la retta dell' efficienza richiesta: si assuma che un giardiniere venga
 # considerato efficiente se in 1 ora di lavoro si occupa di almeno 30 piante (assumiamo
 # per semplicità che ogni pianta richieda le stesse "cure" ogni settimana).
-abline(a = 0, b = 1/30, col = 'blue')
+#abline(a = 0, b = 1/30, col = 'blue')
+
+summary(reg)
+dev_std <- sqrt(sum(reg$residuals^2)/length(reg$residuals))
+# disegno intervallo deviazione standard
+abline(a = reg$coefficients[1] - dev_std, b = reg$coefficients[2], col = 'blue')
+abline(a = reg$coefficients[1] + dev_std, b = reg$coefficients[2], col = 'blue')
 dev.off()
 
 png(file="plots_results/scatterplot1_residuals.png", width=800, height=600)
-summary(reg)
 plot(reg$residuals, main = "Residui")
 print(lavoro_giardinieri)
 print(reg$residuals)
+print(mean(reg$residuals))
+# Varianza residua
+print(sum(reg$residuals^2)/length(reg$residuals))
+# Deviazione standard residua
+print(dev_std)
 dev.off()
