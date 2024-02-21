@@ -11,6 +11,8 @@ CREATE domain COORDINATE AS REAL[2]
     CONSTRAINT longitudine CHECK (value[2] >= -180 and value[2] <= 180)
     CONSTRAINT not_null CHECK (value[1] IS NOT NULL AND value[2] IS NOT NULL);
 
+------------------------------------------------------------------------------------------
+
 -- DEFINIZIONE DELLE TABELLE
 
 CREATE TABLE Famiglia (
@@ -119,8 +121,11 @@ CREATE TABLE GP (
     PRIMARY KEY (genere, posizione)
 );
 
+------------------------------------------------------------------------------------------
+
 -- DEFINIZIONE DELLE FUNZIONI E DEI TRIGGER
 
+-- VINCOLO DI PARTECIPAZIONE NELLE RELAZIONI MOLTI A MOLTI
 -- Controllo che un giardiniere abbia almeno un orario
 CREATE OR REPLACE FUNCTION check_orario_giardiniere()
 RETURNS TRIGGER LANGUAGE plpgsql AS 
@@ -141,13 +146,17 @@ $$
     END;
 $$;
 
--- Controllo che un giardiniere abbia almeno un orario
 CREATE OR REPLACE TRIGGER check_orario_giardiniere
 BEFORE DELETE ON Lavora
 FOR EACH ROW
 EXECUTE PROCEDURE check_orario_giardiniere();
 
--- Controllo che una famiglia sensibile al clima abbia almeno un clima a cui è sensibile
+
+------------------------------------------------------------------------------------------
+
+-- MODIFICA DEL CLIMA DI UNA POSIZIONE 1
+-- Prima di modificare il clima di una posizione, controllo che famiglie sensibili al clima
+-- abbiano almeno un clima a cui sono sensibili.
 CREATE OR REPLACE FUNCTION check_sensibile_al_clima()
 RETURNS TRIGGER LANGUAGE plpgsql AS
 $$
@@ -167,24 +176,14 @@ $$
     END;
 $$;
 
--- Controllo che una famiglia sensibile al clima abbia almeno un clima a cui è sensibile
 CREATE OR REPLACE TRIGGER check_sensibile_al_clima
 BEFORE DELETE ON PuoStare
 FOR EACH ROW
 EXECUTE PROCEDURE check_sensibile_al_clima();
 
-SELECT numero_ore.giardiniere, ore_totali, count 
-FROM
-    (SELECT giardiniere, SUM(ora_fine - ora_inizio) AS ore_totali
-    FROM Lavora
-    GROUP BY giardiniere) AS numero_ore JOIN
-    (SELECT giardiniere, count(*)
-    FROM EResponsabile
-    GROUP BY giardiniere) AS numero_piante 
-    ON numero_ore.giardiniere = numero_piante.giardiniere;
-
 ------------------------------------------------------------------------------------------
--- CHECK PIANTE POSIZIONE
+
+-- MODIFICA DEL CLIMA DI UNA POSIZIONE 2
 -- Prima dell'operazione di MODIFICA DEL CLIMA, verifica che non ci siano piante che non
 -- possono stare nel nuovo clima.
 CREATE OR REPLACE FUNCTION check_piante_posizione()
@@ -221,18 +220,9 @@ BEFORE UPDATE ON Posizione
 FOR EACH ROW
 EXECUTE PROCEDURE check_piante_posizione();
 
--- TEST 1
--- UPDATE Posizione
--- SET clima = 'tropical'
--- WHERE codice = 'F2AHZ';
--- Expected output:
--- NOTICE:  La famiglia Asteraceae non può stare nel clima tropical
--- Check correctness:
--- SELECT * FROM PuoStare WHERE sensibile_al_clima = 'Asteraceae';
 ------------------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------------
--- AGGIORNA GP
+-- CONSISTENZA DI GP
 -- Dopo l'operazione di MODIFICA DEL CLIMA aggiorna la relazione GP di conseguenza.
 CREATE OR REPLACE FUNCTION aggiorna_gp()
 RETURNS TRIGGER LANGUAGE plpgsql AS
@@ -260,15 +250,9 @@ AFTER UPDATE ON Posizione
 FOR EACH ROW
 EXECUTE PROCEDURE aggiorna_gp();
 
--- TEST 1
--- UPDATE Posizione
--- SET clima = 'tropical'
--- WHERE codice = 'xeen9';
--- Rimane uguale.
 ------------------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------------
--- CHECK INSERIMENTO PIANTA
+-- INSERIMENTO DI UNA PIANTA IN UNA POSIZIONE
 -- Prima dell'AGGIUNTA / MODIFICA DI UNA PIANTA controlla che possa essere inserita nella
 -- posizione desiderata.
 CREATE OR REPLACE FUNCTION check_inserimento_pianta()
@@ -295,12 +279,3 @@ BEFORE INSERT OR UPDATE ON Pianta
 FOR EACH ROW
 EXECUTE PROCEDURE check_inserimento_pianta();
 
--- TEST 1
--- SELECT aggiungi_pianta('Zulu Fescue', 'F2AHZ');
--- Expected output:
--- NOTICE:  La pianta di genere Zulu Fescue non può stare nella posizione F2AHZ.
--- TEST 2
--- SELECT aggiungi_pianta('Zulu Fescue', 'Fegeg');
--- Expected output:
--- Pianta aggiunta.
-------------------------------------------------------------------------------------------
