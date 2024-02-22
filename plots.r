@@ -103,14 +103,8 @@ plot(
     main="Efficienza dei giardinieri",
     las=2)
 # Aggiungi la retta di regressione.
-# TODO: forse la retta di regressione è inutile?
 reg <- lm(ore_totali ~ numero_piante, data = lavoro_giardinieri)
 abline(reg, col = 'red')
-
-# Aggiungo la retta dell' efficienza richiesta: si assuma che un giardiniere venga
-# considerato efficiente se in 1 ora di lavoro si occupa di almeno 30 piante (assumiamo
-# per semplicità che ogni pianta richieda le stesse "cure" ogni settimana).
-#abline(a = 0, b = 1/30, col = 'blue')
 
 summary(reg)
 dev_std <- sqrt(sum(reg$residuals^2)/length(reg$residuals))
@@ -119,8 +113,24 @@ abline(a = reg$coefficients[1] - dev_std, b = reg$coefficients[2], col = 'blue')
 abline(a = reg$coefficients[1] + dev_std, b = reg$coefficients[2], col = 'blue')
 dev.off()
 
-png(file="plots_results/scatterplot1_residuals.png", width=800, height=600)
-plot(reg$residuals, main = "Residui")
+
+# Efficienza dei giardinieri ricercata
+png(file="plots_results/scatterplot1_efficiency.png", width=800, height=600)
+plot(
+    lavoro_giardinieri$numero_piante,
+    lavoro_giardinieri$ore_totali,
+    xlab="Numero di piante di cui è responsabile",
+    ylab="Ore di lavoro per settimana",
+    main="Efficienza dei giardinieri ricercata",
+    las=2)
+
+# Aggiungo la retta dell' efficienza richiesta: si assuma che un giardiniere venga
+# considerato efficiente se in 1 ora di lavoro si occupa di almeno 30 piante (assumiamo
+# per semplicità che ogni pianta richieda le stesse "cure" ogni settimana).
+abline(a = 0, b = 1/30, col = 'red')
+dev.off()
+
+
 print(lavoro_giardinieri)
 print(reg$residuals)
 print(mean(reg$residuals))
