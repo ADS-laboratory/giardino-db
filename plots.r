@@ -107,6 +107,7 @@ reg <- lm(ore_totali ~ numero_piante, data = lavoro_giardinieri)
 abline(reg, col = 'red')
 
 summary(reg)
+# print(mean(reg$residuals))
 dev_std <- sqrt(sum(reg$residuals^2)/length(reg$residuals))
 # disegno intervallo deviazione standard
 abline(a = reg$coefficients[1] - dev_std, b = reg$coefficients[2], col = 'blue')
@@ -128,14 +129,4 @@ plot(
 # considerato efficiente se in 1 ora di lavoro si occupa di almeno 30 piante (assumiamo
 # per semplicità che ogni pianta richieda le stesse "cure" ogni settimana).
 abline(a = 0, b = 1/30, col = 'red')
-dev.off()
-
-
-print(lavoro_giardinieri)
-print(reg$residuals)
-print(mean(reg$residuals))
-# Varianza residua
-print(sum(reg$residuals^2)/length(reg$residuals))
-# Deviazione standard residua
-print(dev_std)
 dev.off()
