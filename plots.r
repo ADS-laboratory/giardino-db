@@ -106,9 +106,8 @@ plot(
 reg <- lm(ore_totali ~ numero_piante, data = lavoro_giardinieri)
 abline(reg, col = 'red')
 
-summary(reg)
 # print(mean(reg$residuals))
-dev_std <- sqrt(sum(reg$residuals^2)/length(reg$residuals))
+dev_std <- sigma(reg)
 # disegno intervallo deviazione standard
 abline(a = reg$coefficients[1] - dev_std, b = reg$coefficients[2], col = 'blue')
 abline(a = reg$coefficients[1] + dev_std, b = reg$coefficients[2], col = 'blue')
