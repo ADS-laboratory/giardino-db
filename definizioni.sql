@@ -279,3 +279,37 @@ BEFORE INSERT OR UPDATE ON Pianta
 FOR EACH ROW
 EXECUTE PROCEDURE check_inserimento_pianta();
 
+------------------------------------------------------------------------------------------
+
+-- AGGIUNTA O AGGIORNAMENTO DI UN ORARIO DI LAVORO DI UN GIARDINIERE
+-- Prima dell'AGGIUNTA / MODIFICA DI UN ORARIO DI LAVORO controlla che non ci siano sovrapposizioni
+-- Sono ammesse sovrapposizioni del giorno della settimana, ma non dell'orario.
+CREATE OR REPLACE FUNCTION check_orario_giardiniere()
+RETURNS TRIGGER LANGUAGE plpgsql AS
+$$
+    BEGIN
+        -- Se esiste un orario di lavoro che si sovrappone a quello che si sta cercando di inserire
+        -- l'operazione viene annullata.
+        -- Un orario si sovrappone a un altro se inizia o finisce durante l'orario di lavoro di un altro
+        IF EXISTS (
+            SELECT *
+            FROM Lavora
+            WHERE giardiniere = NEW.giardiniere
+                AND giorno_della_settimana = NEW.giorno_della_settimana
+                AND (
+                    (NEW.ora_inizio >= ora_inizio AND NEW.ora_inizio <= ora_fine)
+                    OR (NEW.ora_fine >= ora_inizio AND NEW.ora_fine <= ora_fine)
+                    OR (NEW.ora_inizio <= ora_inizio AND NEW.ora_fine >= ora_fine)
+                )
+        ) THEN
+            RAISE NOTICE ' Inserimento non valido: L''orario % - % del giorno % si sovrappone a uno già registrato', NEW.ora_inizio, NEW.ora_fine, NEW.giorno_della_settimana;
+            RETURN NULL;
+        END IF;
+        RETURN NEW;
+    END;
+$$;
+
+CREATE OR REPLACE TRIGGER check_orario_giardiniere
+BEFORE INSERT OR UPDATE ON Lavora
+FOR EACH ROW
+EXECUTE PROCEDURE check_orario_giardiniere();
