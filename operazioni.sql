@@ -321,7 +321,7 @@ $$;
 
 ------------------------------------------------------------------------------------------
 -- Calcolare dimensione di una relazione dello schema.
-CREATE OR REPLACE FUNCTION dimensione_relazione(
+CREATE OR REPLACE FUNCTION dimensione_relazioni(
     nome text
 )
 RETURNS TABLE (relazione varchar(50), dimensione text) LANGUAGE plpgsql AS
@@ -337,5 +337,5 @@ END;
 $$;
 
 -- In particolare:
--- SELECT dimensione_relazione('giardino');
+-- SELECT dimensione_relazioni('giardino');
 -- Restituisce la dimensione di tutte le relazioni dello schema giardino.
