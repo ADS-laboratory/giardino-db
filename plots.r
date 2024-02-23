@@ -105,12 +105,9 @@ plot(
 # Aggiungi la retta di regressione.
 reg <- lm(ore_totali ~ numero_piante, data = lavoro_giardinieri)
 abline(reg, col = 'red')
-
-# print(mean(reg$residuals))
-dev_std <- sigma(reg)
-# disegno intervallo deviazione standard
-abline(a = reg$coefficients[1] - dev_std, b = reg$coefficients[2], col = 'blue')
-abline(a = reg$coefficients[1] + dev_std, b = reg$coefficients[2], col = 'blue')
+# Accedo ai risultati della regressione (in particolare R^2).
+summary <- summary(reg)
+# print(summary)
 dev.off()
 
 
@@ -127,5 +124,5 @@ plot(
 # Aggiungo la retta dell' efficienza richiesta: si assuma che un giardiniere venga
 # considerato efficiente se in 1 ora di lavoro si occupa di almeno 30 piante (assumiamo
 # per semplicità che ogni pianta richieda le stesse "cure" ogni settimana).
-abline(a = 0, b = 1/30, col = 'red')
+abline(a = 0, b = 1/30, col = 'blue')
 dev.off()
