@@ -295,6 +295,7 @@ $$
     END;
 $$;
 
+------------------------------------------------------------------------------------------
 -- Calcolare dimensione di uno schema sul db.
 -- Fonte: https://wiki.postgresql.org/wiki/Schema_Size
 CREATE OR REPLACE FUNCTION dimensione_schema(
@@ -313,6 +314,28 @@ $$
         RETURN pg_size_pretty(result);
     END
 $$;
+
 -- In particolare:
 -- SELECT dimensione_schema('giardino');
 -- Restituisce la dimensione dello schema giardino.
+
+------------------------------------------------------------------------------------------
+-- Calcolare dimensione di una relazione dello schema.
+CREATE OR REPLACE FUNCTION dimensione_relazione(
+    nome text
+)
+RETURNS TABLE (relazione varchar(50), dimensione text) LANGUAGE plpgsql AS
+$$
+BEGIN
+    RETURN QUERY
+    SELECT quote_ident(table_name)::varchar(50) AS relazione,
+           pg_size_pretty(pg_total_relation_size(quote_ident(table_name))) AS dimensione
+    FROM information_schema.tables
+    WHERE table_schema = nome
+    ORDER BY pg_total_relation_size(quote_ident(table_name)) DESC;
+END;
+$$;
+
+-- In particolare:
+-- SELECT dimensione_relazione('giardino');
+-- Restituisce la dimensione di tutte le relazioni dello schema giardino.
