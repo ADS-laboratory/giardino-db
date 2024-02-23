@@ -109,8 +109,6 @@ CREATE TABLE Lavora (
         ON UPDATE CASCADE
 );
 
--- TODO: check for non overlapping time intervals
-
 CREATE TABLE GP (
     genere varchar(50) REFERENCES Genere
         ON DELETE CASCADE
@@ -282,8 +280,7 @@ EXECUTE PROCEDURE check_inserimento_pianta();
 ------------------------------------------------------------------------------------------
 
 -- AGGIUNTA O AGGIORNAMENTO DI UN ORARIO DI LAVORO DI UN GIARDINIERE
--- Prima dell'AGGIUNTA / MODIFICA DI UN ORARIO DI LAVORO controlla che non ci siano sovrapposizioni
--- Sono ammesse sovrapposizioni del giorno della settimana, ma non dell'orario.
+-- Prima dell'AGGIUNTA / MODIFICA DI UN ORARIO DI LAVORO controlla che non ci siano sovrapposizioni.
 CREATE OR REPLACE FUNCTION check_orario_giardiniere()
 RETURNS TRIGGER LANGUAGE plpgsql AS
 $$
