@@ -294,3 +294,25 @@ $$
         );
     END;
 $$;
+
+-- Calcolare dimensione di uno schema sul db.
+-- Fonte: https://wiki.postgresql.org/wiki/Schema_Size
+CREATE OR REPLACE FUNCTION dimensione_schema(
+    nome text
+)
+RETURNS text LANGUAGE plpgsql AS
+$$
+    DECLARE
+        result bigint;
+    BEGIN
+        SELECT sum(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::bigint
+        INTO result
+        FROM pg_tables
+        WHERE schemaname = nome;
+        -- Formatto il risultato l'unità di misura.
+        RETURN pg_size_pretty(result);
+    END
+$$;
+-- In particolare:
+-- SELECT dimensione_schema('giardino');
+-- Restituisce la dimensione dello schema giardino.
